@@ -17,6 +17,7 @@ class LinkedInPageSnapshot(BaseModel):
     period: str                       # "2026-06"
     pulled_on: date_type
     impressions: Optional[int] = None
+    # The headline metric: AVERAGE MONTHLY engagement rate, as a percent (4.2 == 4.2%).
     engagement_rate: Optional[float] = None
     new_followers: Optional[int] = None
     total_followers: Optional[int] = None

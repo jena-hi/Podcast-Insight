@@ -75,7 +75,12 @@ podcast-insight linkedin list
   "reactions": 320, "comments": 64, "shares": 18, "posts": 9
 }
 ```
-`engagement_rate` is a percent number (4.2 means 4.2%). Any field can be omitted.
+`engagement_rate` is the **average monthly engagement rate** as a percent (4.2
+means 4.2%) — this is the headline general-engagement metric. Any field can be
+omitted.
+
+> Events: the podcasts are hosted as LinkedIn Events on the **Human Intelligence
+> Movement page**, so event pulls use that page as the host context.
 
 ### Event JSON  (see examples/linkedin_event.example.json)
 

@@ -53,21 +53,26 @@ the COMPANY PAGE configured in `config/settings.yaml → linkedin`, NOT the pers
 profile. Default page: **Human Intelligence Movement** (`company_id: 101674670`,
 `urn:li:fsd_company:101674670`). The account also manages **ProSolve** (691327).
 - Follower growth: `mcp__ConnectSafely__get-company-followers` for that company id.
-- Impressions / engagement: aggregate the page's recent posts —
-  `mcp__ConnectSafely__get-latest-posts` for the org, then per post
-  `get-post-reactions` + `get-all-post-comments` (and impressions via
-  `scrape-post` where available for owned posts). Engagement rate = total
-  engagements ÷ impressions × 100.
+- **`engagement_rate` is the headline metric the user cares about: the AVERAGE
+  MONTHLY engagement rate.** Compute it for the month's posts: gather the org's
+  posts in the period via `mcp__ConnectSafely__get-latest-posts`, then per post
+  `get-post-reactions` + `get-all-post-comments` (+ shares), and impressions via
+  `scrape-post` where available. Engagement rate per post = engagements ÷
+  impressions × 100; the monthly figure is the mean of those per-post rates (or
+  total engagements ÷ total impressions × 100 if per-post impressions are
+  missing). Put this in `engagement_rate`; also fill `impressions` (month total).
 - Confirm the company id with `get-organizations` if unsure.
 - Map to the page JSON shape (see `examples/linkedin_page.example.json`), set
   `period` (e.g. "2026-06"), write a temp JSON, then run
   `podcast-insight linkedin import-page --file <json>`.
 
 **Per-event stats** (podcasts run as LinkedIn Events — attendees, impressions,
-engagement, and who commented):
+engagement, and who commented). The events are hosted on the **Human Intelligence
+Movement page** (`urn:li:fsd_company:101674670`), so use that org as the host
+context when resolving the event and its posts.
 - Use `mcp__ConnectSafely__get-event-attendees` for attendees, and
   `get-post-comments` / `get-all-post-comments` + `get-post-reactions` on the
-  event's live-video post for commenters and reactions.
+  event's live-video post (published by the HIM page) for commenters and reactions.
 - Map to the event JSON shape (`examples/linkedin_event.example.json`), set
   `episode_slug` to the matching episode, write a temp JSON, then run
   `podcast-insight linkedin import-event --file <json>`.
