@@ -1,0 +1,23 @@
+# Secrets / config
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+
+# Generated data — keep the folders (via .gitkeep) but not their contents
+data/episodes/*
+!data/episodes/.gitkeep
+data/analytics/*
+!data/analytics/.gitkeep
+data/output/*
+!data/output/.gitkeep
+
+# OS
+.DS_Store

@@ -1,0 +1,35 @@
+[project]
+name = "podcast-insight"
+version = "0.1.0"
+description = "Automation toolkit for a live podcast: content generation + performance insights"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "anthropic>=0.40",
+    "pydantic>=2.6",
+    "pyyaml>=6.0",
+    "python-dotenv>=1.0",
+    "click>=8.1",
+    "rich>=13.7",
+]
+
+[project.optional-dependencies]
+# Only needed once you wire up live analytics. See docs/CONNECTING_ANALYTICS.md
+analytics = [
+    "google-api-python-client>=2.0",
+    "google-auth-oauthlib>=1.2",
+    "requests>=2.31",
+]
+dev = [
+    "pytest>=8.0",
+]
+
+[project.scripts]
+podcast-insight = "podcast_insight.cli:cli"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]

@@ -1,0 +1,46 @@
+# ─── General settings ─────────────────────────────────────────────────────────
+
+ai:
+  # Default model for all generation. Sonnet is a great balance of quality/cost.
+  # Swap to a stronger model for final blogs if you want (see overrides below).
+  #   - claude-sonnet-4-6    (recommended default — fast, cheap, strong)
+  #   - claude-opus-4-8      (highest quality, more expensive)
+  #   - claude-haiku-4-5     (cheapest, good for drafts/social)
+  model: "claude-sonnet-4-6"
+  max_tokens: 4096
+  temperature: 0.7
+
+  # Optional per-task model overrides. Leave blank to use the default above.
+  overrides:
+    topics: ""        # extraction is easy — a cheaper model is fine
+    blog: ""          # consider claude-opus-4-8 here for the highest quality
+    social: ""
+    insights: ""
+
+content:
+  # How many top topics to expand in the blog.
+  top_topics: 3
+  # Social platforms to write copy for, per clip.
+  social_platforms:
+    - linkedin
+    - youtube       # title + description for the clip upload
+    - shorts        # short vertical caption / hook
+  # Hashtag style for social copy.
+  hashtags:
+    enabled: true
+    max: 5
+
+analytics:
+  # Which platforms to attempt to pull from.
+  platforms:
+    - youtube
+    - spotify
+    - apple
+  # How a "top performer" is scored. These weights are combined into one score
+  # after each metric is normalized across your episodes. Tune to taste.
+  scoring_weights:
+    views: 0.30
+    watch_time: 0.30
+    avg_view_duration: 0.15
+    engagement: 0.15      # likes + comments + shares
+    listens: 0.10

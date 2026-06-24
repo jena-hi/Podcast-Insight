@@ -1,0 +1,62 @@
+# ─── Your Voice Profile ───────────────────────────────────────────────────────
+# This is the single most important file for blog quality. It teaches the AI to
+# write like YOU, not like generic AI. Edit every field. The example values below
+# are placeholders — replace them. The more specific you are, the better.
+#
+# Tip: paste 2–3 paragraphs you've actually written into "writing_samples" — that
+# alone improves the match more than anything else.
+
+host_name: "Your Name"
+podcast_name: "Your Podcast"
+
+# One or two sentences: who you are and the lens you bring.
+bio: >
+  Host of a live podcast on [your topic]. I interview practitioners and translate
+  what's working in the field into plain, practical takeaways.
+
+# Who you're writing for. Be concrete (role, seniority, what they care about).
+audience: >
+  Mid-career professionals in [industry] who want practical, no-fluff insight
+  they can apply this week.
+
+# 3–6 adjectives for the tone you want.
+tone:
+  - conversational
+  - direct
+  - warm but not cheesy
+  - lightly opinionated
+
+# How you build paragraphs and sentences.
+style:
+  sentence_length: "mostly short, varied; occasional one-line punch"
+  formality: "casual-professional — like talking to a smart colleague"
+  point_of_view: "first person; speak directly to the reader as 'you'"
+  structure: "lead with the takeaway, then explain, then a concrete example"
+
+# Words/phrases you use a lot (helps it sound like you).
+signature_phrases:
+  - "Here's the thing"
+  - "Let's be honest"
+  - "The practical move is"
+
+# Hard rules — the AI must avoid these.
+avoid:
+  - corporate buzzwords (synergy, leverage, circle back, move the needle)
+  - em-dash overuse
+  - generic openers like "In today's fast-paced world..."
+  - exclamation points (use sparingly)
+  - making up statistics or quotes
+
+# Formatting preferences for blog posts.
+formatting:
+  use_headings: true
+  use_bullets: "sometimes, where it genuinely helps"
+  target_length_words: 900
+  include_intro_hook: true
+  include_call_to_action: true   # e.g. "listen to the full episode" + subscribe
+
+# Paste real writing of yours here (the more the better). This is the strongest
+# signal for matching your voice.
+writing_samples: >
+  (Paste 2–3 paragraphs you've written — a past blog, a LinkedIn post, a
+  newsletter. Keep your natural phrasing, typos and all. Replace this text.)
