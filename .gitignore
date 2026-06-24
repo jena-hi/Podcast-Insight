@@ -25,6 +25,10 @@ data/analytics/*
 data/output/*
 !data/output/.gitkeep
 
+# LinkedIn raw data + event dashboards hold PII (commenter/attendee names) —
+# never commit. Only the name-free page dashboards in reports/ are tracked.
+data/linkedin/
+
 # OAuth tokens / secrets folder — never commit.
 secrets/
 

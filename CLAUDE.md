@@ -42,6 +42,34 @@ comma, sentence-case headings, "we" voice, never "soft skills" / "fix education"
 - Spotify uses an UNOFFICIAL session-cookie connector — if it errors, it likely
   needs the captured request URL re-grabbed (see docs/CONNECTING_ANALYTICS.md).
 
+## LinkedIn analytics (via ConnectSafely — run in-session, not in the cloud job)
+
+When the user asks to pull LinkedIn analytics, use the **ConnectSafely** MCP tools
+(the account is linked; a paid API seat must be allocated first). Full reference:
+`docs/LINKEDIN.md`.
+
+**Monthly page stats** (impressions, engagement rate, new followers):
+- Use tools like `mcp__ConnectSafely__get-creator-analytics`,
+  `get-weekly-engagement`, `get-company-followers` / `get-account-activity`.
+- Map results to the page JSON shape (see `examples/linkedin_page.example.json`),
+  write a temp JSON, then run `podcast-insight linkedin import-page --file <json>`.
+
+**Per-event stats** (podcasts run as LinkedIn Events — attendees, impressions,
+engagement, and who commented):
+- Use `mcp__ConnectSafely__get-event-attendees` for attendees, and
+  `get-post-comments` / `get-all-post-comments` + `get-post-reactions` on the
+  event's live-video post for commenters and reactions.
+- Map to the event JSON shape (`examples/linkedin_event.example.json`), set
+  `episode_slug` to the matching episode, write a temp JSON, then run
+  `podcast-insight linkedin import-event --file <json>`.
+
+Rules:
+- Commenter/attendee NAMES are PII → they only go into the event JSON / local
+  dashboards. Never write names into `reports/` or episode records or commits.
+- Don't allocate seats or make billable ConnectSafely calls without the user's OK.
+- Pull at a human cadence (monthly). Don't hammer the account.
+- After importing, show the user the dashboards and offer to run `insights`.
+
 ## Don't
 
 - Don't commit `.env` or anything under `secrets/`.

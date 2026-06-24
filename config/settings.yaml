@@ -42,8 +42,10 @@ analytics:
   # How a "top performer" is scored. These weights are combined into one score
   # after each metric is normalized across your episodes. Tune to taste.
   scoring_weights:
-    views: 0.30
-    watch_time: 0.30
-    avg_view_duration: 0.15
-    engagement: 0.15      # likes + comments + shares
+    views: 0.25
+    watch_time: 0.20
+    avg_view_duration: 0.10
+    engagement: 0.15      # likes/reactions + comments + shares
     listens: 0.10
+    impressions: 0.15     # LinkedIn (and any platform reporting impressions)
+    attendees: 0.05       # LinkedIn event attendees

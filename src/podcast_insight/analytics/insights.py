@@ -23,6 +23,8 @@ METRIC_FIELDS = {
     "avg_view_duration": "avg_view_duration_seconds",
     "engagement": "engagement",
     "listens": "listens",
+    "impressions": "impressions",      # LinkedIn (+ any platform that reports it)
+    "attendees": "attendees",          # LinkedIn events
 }
 
 

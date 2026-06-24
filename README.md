@@ -178,8 +178,11 @@ src/podcast_insight/
 - [x] Insights + recommendations engine (works on whatever analytics it's given)
 - [~] Analytics connectors — structured + documented; need your API credentials
       to pull live data (see `docs/CONNECTING_ANALYTICS.md`)
+- [x] LinkedIn layer — monthly page dashboard + per-event dashboards (attendees,
+      impressions, engagement, who commented) via ConnectSafely
+      (see `docs/LINKEDIN.md`)
+- [x] Monthly scheduling for YouTube/Spotify (GitHub Actions)
 - [ ] Auto-publishing to LinkedIn / YouTube (stubs in `publish/`)
-- [ ] Scheduling (run automatically after each episode)
 
 See `docs/CONNECTING_ANALYTICS.md` and `docs/AUTOMATION.md` for the next steps,
 each written for someone who's done "some API and coding stuff."

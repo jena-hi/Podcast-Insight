@@ -5,7 +5,9 @@ Run `podcast-insight --help` or `podcast-insight <command> --help` for details.
 
 from __future__ import annotations
 
+import json
 import uuid
+from pathlib import Path
 
 import click
 from rich.console import Console
@@ -24,6 +26,9 @@ from .analytics.spotify_creators import SpotifyCreatorsConnector
 from .analytics.youtube import YouTubeConnector
 from .ingest.transcript import build_episode
 from .ingest.youtube import build_episode_from_youtube
+from .linkedin import ingest as li_ingest
+from .linkedin import reports as li_reports
+from .linkedin import store as li_store
 from .models import Clip
 
 console = Console()
@@ -413,6 +418,86 @@ def insights(stamp: str | None) -> None:
     if markdown:
         outputs.write_insights(markdown, stamp=stamp)
         console.print(f"[green]Insights written[/] → reports/insights-latest.md")
+
+
+# ── linkedin ─────────────────────────────────────────────────────────────────
+@cli.group()
+def linkedin() -> None:
+    """LinkedIn analytics: monthly page dashboard + per-event dashboards.
+
+    Data is gathered via the ConnectSafely connector in a Claude session (see
+    CLAUDE.md / docs/LINKEDIN.md), or supplied manually as JSON. Commenter and
+    attendee NAMES are stored locally only (never committed to git).
+    """
+
+
+@linkedin.command("import-page")
+@click.option("--file", "file_", required=True, type=click.Path(exists=True, dir_okay=False),
+              help="JSON file with the monthly page metrics.")
+def linkedin_import_page(file_: str) -> None:
+    """Import a monthly LinkedIn Page snapshot from JSON and build the dashboard."""
+    data = json.loads(Path(file_).read_text(encoding="utf-8"))
+    snapshot = li_ingest.import_page(data)
+    path = li_reports.write_page_dashboard(snapshot)
+    console.print(f"[green]Imported page snapshot {snapshot.period}[/] → "
+                  f"{path.relative_to(config.PROJECT_ROOT)} (tracked, no names).")
+
+
+@linkedin.command("import-event")
+@click.option("--file", "file_", required=True, type=click.Path(exists=True, dir_okay=False),
+              help="JSON file with the event metrics + commenters.")
+def linkedin_import_event(file_: str) -> None:
+    """Import a LinkedIn event from JSON, build its dashboard, fold into insights."""
+    data = json.loads(Path(file_).read_text(encoding="utf-8"))
+    event = li_ingest.import_event(data)
+    path = li_reports.write_event_dashboard(event)
+    console.print(f"[green]Imported event '{event.name}'[/] "
+                  f"({len(event.commenters)} commenters) → "
+                  f"{path.relative_to(config.PROJECT_ROOT)} [yellow](local only — has names)[/].")
+    if event.episode_slug and storage.exists(event.episode_slug):
+        console.print(f"  Folded aggregate metrics into episode [bold]{event.episode_slug}[/].")
+    elif event.episode_slug:
+        console.print(f"  [dim]Episode '{event.episode_slug}' not found — metrics not folded. "
+                      f"Ingest it to include LinkedIn data in insights.[/]")
+
+
+@linkedin.command("page-report")
+@click.argument("period", required=False)
+def linkedin_page_report(period: str | None) -> None:
+    """Re-render the monthly page dashboard (latest if no period given)."""
+    snaps = li_store.all_page_snapshots()
+    if not snaps:
+        console.print("No page snapshots yet. Use `linkedin import-page` first.")
+        return
+    snapshot = li_store.load_page(period) if period else snaps[-1]
+    path = li_reports.write_page_dashboard(snapshot)
+    console.print(f"[green]Page dashboard[/] → {path.relative_to(config.PROJECT_ROOT)}")
+    console.print(li_reports.render_page_dashboard(snapshot))
+
+
+@linkedin.command("event-report")
+@click.argument("key")
+def linkedin_event_report(key: str) -> None:
+    """Re-render an event dashboard (KEY = episode slug, event id, or name-slug)."""
+    event = li_store.load_event(key)
+    path = li_reports.write_event_dashboard(event)
+    console.print(f"[green]Event dashboard[/] → {path.relative_to(config.PROJECT_ROOT)} "
+                  f"[yellow](local only)[/]")
+
+
+@linkedin.command("list")
+def linkedin_list() -> None:
+    """List imported LinkedIn page snapshots and events."""
+    snaps = li_store.all_page_snapshots()
+    events = li_store.all_events()
+    console.print(f"[bold]Page snapshots:[/] {', '.join(s.period for s in snaps) or '—'}")
+    console.print("[bold]Events:[/]")
+    if not events:
+        console.print("  —")
+    for e in events:
+        d = e.date.isoformat() if e.date else "?"
+        console.print(f"  {e.name} [{d}] · attendees={e.attendees} · "
+                      f"commenters={len(e.commenters)} · episode={e.episode_slug or '—'}")
 
 
 # ── list ─────────────────────────────────────────────────────────────────────
