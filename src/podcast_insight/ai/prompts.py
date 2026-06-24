@@ -174,6 +174,42 @@ def social_prompt(
     return system, user
 
 
+# ── Blog promo caption ───────────────────────────────────────────────────────
+
+def promo_prompt(
+    episode_title: str,
+    blog_markdown: str,
+    topics: list[dict],
+    platforms: list[str],
+    hashtags_cfg: dict,
+) -> tuple[str, str]:
+    system = (
+        "You write social captions that drive people to read a blog post. You "
+        "match the host's voice exactly, tease the single most compelling idea, "
+        "and never overpromise or clickbait dishonestly.\n\n"
+        "VOICE PROFILE:\n" + _voice_block()
+    )
+    ht = ""
+    if hashtags_cfg.get("enabled", True):
+        ht = f"Include up to {hashtags_cfg.get('max', 5)} relevant hashtags."
+    keys = ", ".join(f'"{p}"' for p in platforms)
+    topics_json = json.dumps(topics, indent=2)
+    user = (
+        f"Write a caption (or captions) promoting the blog post for the episode "
+        f"\"{episode_title}\".\n\n"
+        f"The post's backbone topics:\n{topics_json}\n\n"
+        f"Goal: get the reader to click through and read the post. Lead with the "
+        f"sharpest hook, tease one core idea (don't summarize everything), end "
+        f"with a clear CTA to read the blog. Use a placeholder '[BLOG LINK]' where "
+        f"the link goes.\n{ht}\n\n"
+        f"Write one caption per platform: {', '.join(platforms)}.\n"
+        f"Return ONLY valid JSON keyed by platform, e.g. {{{keys}: \"...\"}}. "
+        f"No commentary outside the JSON.\n\n"
+        f"For reference, here is the blog post:\n\n{blog_markdown}"
+    )
+    return system, user
+
+
 # ── Insights ─────────────────────────────────────────────────────────────────
 
 def insights_prompt(scored_summary: str) -> tuple[str, str]:

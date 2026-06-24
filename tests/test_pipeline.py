@@ -52,3 +52,25 @@ def test_clip_lookup():
     ep = Episode(slug="x", title="X", clips=[Clip(id="abc", title="Clip A")])
     assert ep.clip_by_id("abc").title == "Clip A"
     assert ep.clip_by_id("nope") is None
+
+
+def test_youtube_id_extraction():
+    from podcast_insight.ingest.youtube import extract_video_id
+
+    cases = {
+        "https://www.youtube.com/watch?v=dQw4w9WgXcQ": "dQw4w9WgXcQ",
+        "https://youtu.be/dQw4w9WgXcQ?si=abc": "dQw4w9WgXcQ",
+        "https://www.youtube.com/live/dQw4w9WgXcQ": "dQw4w9WgXcQ",
+        "https://www.youtube.com/shorts/dQw4w9WgXcQ": "dQw4w9WgXcQ",
+        "dQw4w9WgXcQ": "dQw4w9WgXcQ",
+    }
+    for url, expected in cases.items():
+        assert extract_video_id(url) == expected
+
+
+def test_spotify_first_number_search():
+    from podcast_insight.analytics.spotify_creators import _first_number
+
+    payload = {"data": {"detailedStreams": {"starts": 1234, "other": "x"}}}
+    assert _first_number(payload, ["starts"]) == 1234.0
+    assert _first_number(payload, ["nope"]) is None

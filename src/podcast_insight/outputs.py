@@ -40,6 +40,20 @@ def write_social(episode: Episode) -> Path:
     return path
 
 
+def write_promo(episode: Episode) -> Path:
+    """Write the blog-promo caption(s) to a markdown file."""
+    path = _dir("promo") / f"{episode.slug}.md"
+    lines = [f"# Blog promo caption — {episode.title}", ""]
+    if not episode.blog_promo:
+        lines.append("_(no promo generated yet)_")
+    for platform, copy in episode.blog_promo.items():
+        lines.append(f"## {platform.capitalize()}")
+        lines.append(copy)
+        lines.append("")
+    path.write_text("\n".join(lines), encoding="utf-8")
+    return path
+
+
 def write_topics(episode: Episode) -> Path:
     path = _dir("topics") / f"{episode.slug}.md"
     lines = [f"# Top topics — {episode.title}", ""]
@@ -55,7 +69,17 @@ def write_topics(episode: Episode) -> Path:
     return path
 
 
-def write_insights(markdown: str) -> Path:
+def write_insights(markdown: str, stamp: str | None = None) -> Path:
+    """Write insights to data/output/ and a git-tracked copy in reports/.
+
+    `stamp` (e.g. '2026-06') names the tracked report; pass it from the caller
+    since workflow time isn't available inside the library.
+    """
     path = _dir("insights") / "latest.md"
     path.write_text(markdown, encoding="utf-8")
+
+    config.REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+    (config.REPORTS_DIR / "insights-latest.md").write_text(markdown, encoding="utf-8")
+    if stamp:
+        (config.REPORTS_DIR / f"insights-{stamp}.md").write_text(markdown, encoding="utf-8")
     return path

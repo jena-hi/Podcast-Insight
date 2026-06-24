@@ -47,45 +47,81 @@ owner (an API key isn't enough — these numbers are private to you).
 
 1. In the same Google Cloud project, also enable **"YouTube Analytics API"**.
 2. **Credentials → Create credentials → OAuth client ID →** Desktop app.
-3. Download the client-secret JSON, save it somewhere in the project, and set:
+3. Download the client-secret JSON, save it as `secrets/yt_client_secret.json`,
+   and set in `.env`:
    ```
    YOUTUBE_OAUTH_CLIENT_SECRET_FILE=secrets/yt_client_secret.json
    ```
-4. Implement the OAuth flow in
-   `src/podcast_insight/analytics/youtube.py → _maybe_add_private_analytics`.
-   It's stubbed with a clear TODO and the exact fields to populate. (Ask Claude
-   Code to "wire up YouTube Analytics OAuth" and it can finish this for you.)
+4. Install the analytics extras and run the one-time consent:
+   ```bash
+   pip install -e ".[analytics]"
+   podcast-insight auth youtube
+   ```
+   A browser opens, you approve, and a token is saved to `secrets/`. From then on
+   `analytics pull` automatically includes watch time, average view duration, and
+   subscribers gained. **No further manual steps, ever.**
 
-> Why it's stubbed: OAuth needs your specific credentials to test, so it's left
-> as the one piece you finish locally. Everything around it is ready.
+5. **For the monthly cloud job**, the command above also prints a **refresh
+   token**. Store these three as GitHub repository secrets so the cloud job can
+   run headless:
+   ```
+   YOUTUBE_OAUTH_CLIENT_ID
+   YOUTUBE_OAUTH_CLIENT_SECRET
+   YOUTUBE_OAUTH_REFRESH_TOKEN
+   ```
+   (Client id/secret are inside the client-secret JSON you downloaded.)
 
 ---
 
-## Spotify
+## Spotify for Creators (UNOFFICIAL)
 
-Spotify splits into the same two levels.
+> ⚠️ Spotify has **no official analytics API**. This connector reuses your
+> logged-in browser session to call Spotify's own internal endpoints. It is
+> undocumented, unsupported, and a gray area vs. Spotify's terms. It works, but
+> it **will break periodically** when Spotify changes their dashboard, and you'll
+> need to re-capture the request (or ask Claude Code to fix it). You opted into
+> this trade-off.
 
-### Public Web API (episode metadata) — implemented
+You provide two things: a session cookie, and one captured analytics request.
 
-1. Go to https://developer.spotify.com/dashboard → create an app.
-2. Copy the **Client ID** and **Client Secret** into `.env`:
+### 1. Grab your `sp_dc` cookie (lasts ~1 year)
+
+1. Log into https://creators.spotify.com in Chrome/Firefox.
+2. Open **DevTools (F12) → Application (Chrome) or Storage (Firefox) → Cookies →
+   the spotify.com entry**.
+3. Find the cookie named **`sp_dc`** and copy its value.
+4. Put it in `.env`:
    ```
-   SPOTIFY_CLIENT_ID=...
-   SPOTIFY_CLIENT_SECRET=...
+   SPOTIFY_DC_COOKIE=<the long value>
+   SPOTIFY_SHOW_ID=<your show id>
    ```
-3. Set the episode id per episode (`set --spotify <episode_id>`). You get the id
-   from the episode's Spotify URL.
 
-### Deep listen analytics (streams, listeners, retention) — CSV export
+### 2. Capture one analytics request ("capture and replay")
 
-Spotify's open API does **not** expose podcast listen analytics. The reliable
-source is **Spotify for Creators** (formerly Anchor / Spotify for Podcasters):
+Because the endpoints are undocumented, you point the tool at a real request
+instead of guessing:
 
-1. In the Spotify for Creators dashboard, open your show → **Audience / Episodes**.
-2. Export the data (CSV).
-3. Save it under `data/analytics/` and finish the importer in
-   `analytics/spotify.py → import_export_csv` (it's stubbed with the column
-   mapping to fill in — the headers vary, so map them once from your real file).
+1. In the Creators dashboard, open an episode's analytics page.
+2. DevTools → **Network** tab → filter to **Fetch/XHR**.
+3. Click the request that returns the numbers you want (look for JSON with
+   "streams", "starts", "listeners", etc.). Right-click → **Copy → Copy link
+   address**.
+4. Paste it into `.env`, replacing the episode/show ids with placeholders so the
+   tool can reuse it for every episode:
+   ```
+   SPOTIFY_CREATORS_ANALYTICS_URL=https://generic.wg.spotify.com/.../shows/{show_id}/episodes/{episode_id}/detailedStreams
+   ```
+5. Set each episode's Spotify id: `podcast-insight set <slug> --spotify <episode_id>`.
+
+Now `podcast-insight analytics pull <slug>` will mint a token from your cookie,
+replay that request per episode, and pull the numbers automatically.
+
+**If the JSON structure is unusual**, set `SPOTIFY_CREATORS_METRIC_KEYS` to the
+exact key name(s) for plays/listens. Or paste a sample response to Claude Code and
+ask it to map the fields — that's a 2-minute fix.
+
+**For the monthly cloud job**, store `SPOTIFY_DC_COOKIE`, `SPOTIFY_SHOW_ID`, and
+`SPOTIFY_CREATORS_ANALYTICS_URL` as GitHub secrets.
 
 ---
 
@@ -121,3 +157,28 @@ Once episodes have analytics, `podcast-insight insights`:
 
 You don't need every platform connected for this to be useful — even YouTube
 public stats alone produce a meaningful ranking.
+
+---
+
+## Running it monthly, hands-off (GitHub Actions)
+
+`.github/workflows/monthly-analytics.yml` runs on the 1st of each month (and on
+demand from the Actions tab). It pulls every episode's analytics, regenerates the
+insights report into `reports/`, and commits the results. It's free.
+
+To turn it on:
+
+1. Push this repo to GitHub (already done if you're reading this there).
+2. Add your keys as **repository secrets**: Settings → Secrets and variables →
+   Actions → New repository secret. Add whichever you use:
+   `ANTHROPIC_API_KEY`, `YOUTUBE_API_KEY`, `YOUTUBE_OAUTH_CLIENT_ID`,
+   `YOUTUBE_OAUTH_CLIENT_SECRET`, `YOUTUBE_OAUTH_REFRESH_TOKEN`,
+   `SPOTIFY_DC_COOKIE`, `SPOTIFY_SHOW_ID`, `SPOTIFY_CREATORS_ANALYTICS_URL`.
+3. Make sure your episode files are committed (they live in `data/episodes/` and
+   are tracked in git). The `from-youtube` command tells you to do this.
+4. Trigger a test run: Actions tab → "Monthly analytics + insights" → Run workflow.
+
+Cost: a run takes ~2–5 minutes. Public repos get unlimited free Actions minutes;
+private repos get 2,000 free minutes/month, so a monthly job is effectively free.
+The only paid usage anywhere is a few cents of Claude tokens for the insights
+write-up.

@@ -78,6 +78,8 @@ class Episode(BaseModel):
     # Generated + collected data.
     topics: list[Topic] = Field(default_factory=list)
     blog_markdown: str = ""
+    # Social copy promoting the blog itself, keyed by platform.
+    blog_promo: dict[str, str] = Field(default_factory=dict)
     clips: list[Clip] = Field(default_factory=list)
     analytics: list[AnalyticsRecord] = Field(default_factory=list)
 

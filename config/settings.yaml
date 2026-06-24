@@ -25,6 +25,9 @@ content:
     - linkedin
     - youtube       # title + description for the clip upload
     - shorts        # short vertical caption / hook
+  # Platforms to write a caption promoting the BLOG post (used by from-youtube).
+  promo_platforms:
+    - linkedin
   # Hashtag style for social copy.
   hashtags:
     enabled: true

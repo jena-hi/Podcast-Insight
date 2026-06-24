@@ -122,15 +122,30 @@ points at the other two via `brand_guide_file` and `sample_files`.
 
 | Command | What it does |
 |---|---|
+| `podcast-insight from-youtube <url>` | **Paste a YouTube link** → fetch transcript → topics → blog → promo caption. |
 | `podcast-insight ingest <file> --title ... --date ...` | Register an episode from a transcript file. |
 | `podcast-insight topics <episode>` | Extract & rank the top 3 topics. |
 | `podcast-insight blog <episode>` | Write a blog expanding the top 3 topics, in your voice. |
+| `podcast-insight promo <episode>` | Write a caption promoting the blog post. |
 | `podcast-insight clips add <episode> ...` | Add a highlight clip (title, timestamps, note). |
 | `podcast-insight social <episode>` | Write social copy for each clip. |
-| `podcast-insight run <episode>` | Do topics → blog → social in one go. |
+| `podcast-insight run <episode>` | Do topics → blog → promo → clip social in one go. |
+| `podcast-insight auth youtube` | One-time OAuth for private YouTube analytics. |
 | `podcast-insight analytics pull <episode>` | Pull YouTube/Spotify/Apple stats. *(needs API setup)* |
+| `podcast-insight analytics pull-all` | Pull stats for every episode (used by the monthly job). |
 | `podcast-insight insights` | Rank top performers + recommendations across all episodes. |
 | `podcast-insight list` | Show all episodes and what's been generated. |
+
+### The fastest path: from a YouTube link
+
+```bash
+podcast-insight from-youtube "https://www.youtube.com/watch?v=XXXXXXXXXXX"
+```
+
+This grabs the transcript (no API key, works on your auto-captioned uploads),
+then writes the blog and a promo caption in your brand voice. In a Claude session
+you can simply paste the link and ask — see `CLAUDE.md`. (YouTube occasionally
+blocks transcript fetches from cloud IPs, so this is most reliable run locally.)
 
 Run any command with `--help` for details.
 

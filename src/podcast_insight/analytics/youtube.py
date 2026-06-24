@@ -63,14 +63,28 @@ class YouTubeConnector:
     def _maybe_add_private_analytics(self, episode: Episode, record: AnalyticsRecord) -> None:
         """Fill in watch_time / avg_view_duration / subscribers via OAuth.
 
-        STUB: implement once you've completed the OAuth setup in the docs. The
-        YouTube Analytics API call would populate:
-            record.watch_time_minutes
-            record.avg_view_duration_seconds
-            record.subscribers_gained
-        Left as a no-op so public stats still work today.
+        Uses the official YouTube Analytics API if OAuth is configured. If it
+        isn't, this is a no-op so public stats still work on their own.
         """
-        return None
+        from .base import NotConfigured
+        from .youtube_oauth import fetch_video_metrics
+
+        try:
+            metrics = fetch_video_metrics(episode.youtube_video_id)
+        except NotConfigured:
+            return  # OAuth not set up — public stats are enough
+        except Exception:  # noqa: BLE001 — never let private metrics break the pull
+            return
+        if not metrics:
+            return
+        if (v := metrics.get("estimatedMinutesWatched")) is not None:
+            record.watch_time_minutes = float(v)
+        if (v := metrics.get("averageViewDuration")) is not None:
+            record.avg_view_duration_seconds = float(v)
+        if (v := metrics.get("subscribersGained")) is not None:
+            record.subscribers_gained = int(v)
+        if record.views is None and (v := metrics.get("views")) is not None:
+            record.views = int(v)
 
 
 def _int(value) -> Optional[int]:

@@ -22,6 +22,8 @@ DATA_DIR = PROJECT_ROOT / "data"
 EPISODES_DIR = DATA_DIR / "episodes"
 ANALYTICS_DIR = DATA_DIR / "analytics"
 OUTPUT_DIR = DATA_DIR / "output"
+# Git-tracked reports the monthly cloud job commits (insights over time).
+REPORTS_DIR = PROJECT_ROOT / "reports"
 
 SETTINGS_FILE = CONFIG_DIR / "settings.yaml"
 VOICE_PROFILE_FILE = CONFIG_DIR / "voice_profile.yaml"
@@ -81,5 +83,5 @@ def model_for(task: str) -> str:
 
 def ensure_dirs() -> None:
     """Create the data directories if they don't exist yet."""
-    for d in (EPISODES_DIR, ANALYTICS_DIR, OUTPUT_DIR):
+    for d in (EPISODES_DIR, ANALYTICS_DIR, OUTPUT_DIR, REPORTS_DIR):
         d.mkdir(parents=True, exist_ok=True)
