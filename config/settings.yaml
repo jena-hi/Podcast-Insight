@@ -33,6 +33,15 @@ content:
     enabled: true
     max: 5
 
+linkedin:
+  # The COMPANY PAGE that monthly page analytics are pulled from (not a personal
+  # profile). These ids come from `get-organizations`. To track a different page
+  # (e.g. ProSolve, id 691327), change these or add it as a second entry.
+  company_id: "101674670"
+  company_urn: "urn:li:fsd_company:101674670"
+  universal_name: "humanintelligencemovement"
+  page_name: "Human Intelligence Movement"
+
 analytics:
   # Which platforms to attempt to pull from.
   platforms:

@@ -47,8 +47,12 @@ def render_page_dashboard(snapshot: LinkedInPageSnapshot) -> str:
         val = _fmt(curr) + (suffix if curr is not None else "")
         return f"| {label} | {val}{d} |"
 
+    page_name = config.settings().get("linkedin", {}).get("page_name", "")
+    heading = f"# LinkedIn — monthly page dashboard ({snapshot.period})"
+    if page_name:
+        heading = f"# {page_name} — LinkedIn page dashboard ({snapshot.period})"
     lines = [
-        f"# LinkedIn — monthly page dashboard ({snapshot.period})",
+        heading,
         "",
         f"_Pulled {snapshot.pulled_on} via {snapshot.source}._"
         + (f" Compared to {prev.period}." if prev else ""),

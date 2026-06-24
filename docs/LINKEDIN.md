@@ -30,6 +30,12 @@ locally.
    Crossland*). Open the ConnectSafely dashboard and **allocate an API seat** to
    that account (this is the paid part). Until a seat is active, data pulls will
    be rejected.
+2. **Page stats are pulled from a company page you manage, not your personal
+   profile.** This account administers two pages:
+   - **Human Intelligence Movement** — id `101674670` (the configured default)
+   - **ProSolve** — id `691327`
+   The target is set in `config/settings.yaml → linkedin`. To switch pages or add
+   ProSolve too, edit that section.
 
 ### Monthly, in a Claude session
 

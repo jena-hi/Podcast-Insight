@@ -48,11 +48,20 @@ When the user asks to pull LinkedIn analytics, use the **ConnectSafely** MCP too
 (the account is linked; a paid API seat must be allocated first). Full reference:
 `docs/LINKEDIN.md`.
 
-**Monthly page stats** (impressions, engagement rate, new followers):
-- Use tools like `mcp__ConnectSafely__get-creator-analytics`,
-  `get-weekly-engagement`, `get-company-followers` / `get-account-activity`.
-- Map results to the page JSON shape (see `examples/linkedin_page.example.json`),
-  write a temp JSON, then run `podcast-insight linkedin import-page --file <json>`.
+**Monthly page stats** (impressions, engagement rate, new followers) — pull from
+the COMPANY PAGE configured in `config/settings.yaml → linkedin`, NOT the personal
+profile. Default page: **Human Intelligence Movement** (`company_id: 101674670`,
+`urn:li:fsd_company:101674670`). The account also manages **ProSolve** (691327).
+- Follower growth: `mcp__ConnectSafely__get-company-followers` for that company id.
+- Impressions / engagement: aggregate the page's recent posts —
+  `mcp__ConnectSafely__get-latest-posts` for the org, then per post
+  `get-post-reactions` + `get-all-post-comments` (and impressions via
+  `scrape-post` where available for owned posts). Engagement rate = total
+  engagements ÷ impressions × 100.
+- Confirm the company id with `get-organizations` if unsure.
+- Map to the page JSON shape (see `examples/linkedin_page.example.json`), set
+  `period` (e.g. "2026-06"), write a temp JSON, then run
+  `podcast-insight linkedin import-page --file <json>`.
 
 **Per-event stats** (podcasts run as LinkedIn Events — attendees, impressions,
 engagement, and who commented):
