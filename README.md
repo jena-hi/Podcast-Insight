@@ -102,11 +102,19 @@ under a dollar on the default model. See `config/settings.yaml` to switch models
 
 ## Make it sound like *you* — the voice profile
 
-Open `config/voice_profile.yaml` and fill it in. This is what makes the blog read
-like you wrote it instead of generic AI. It captures tone, vocabulary, sentence
-rhythm, things you always say, things you never say, and your audience. There's a
-filled-in example in there to copy from. **Spend 10 minutes on this once** — it
-pays off on every episode.
+The voice is driven by three files in `config/`, and all of them are injected
+into every blog and social generation:
+
+- **`voice_profile.yaml`** — the structured essentials (host, audience, tone,
+  signature phrases, hard rules, formatting). Already filled in for the Human
+  Intelligence Movement / *Unscripted Intelligence*.
+- **`brand_voice.md`** — the full, authoritative brand voice guide. This is the
+  canon; on any conflict it wins. Edit this when the brand voice evolves.
+- **`caption_samples.md`** — real approved posts used as few-shot examples so the
+  social copy matches your actual rhythm and structure.
+
+To adapt for a different show, edit these three files. `voice_profile.yaml`
+points at the other two via `brand_guide_file` and `sample_files`.
 
 ---
 

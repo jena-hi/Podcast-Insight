@@ -37,10 +37,43 @@ def _voice_block() -> str:
         lines.append(f"Signature phrases (use naturally, don't overdo): {fmt(vp['signature_phrases'])}")
     if vp.get("avoid"):
         lines.append(f"Strictly AVOID: {fmt(vp['avoid'])}")
-    samples = fmt(vp.get("writing_samples", ""))
-    if samples and "Paste" not in samples:
-        lines.append(f"\nReal writing samples to match in voice and rhythm:\n{samples}")
-    return "\n".join(line for line in lines if line.strip().rstrip(":"))
+    fm = vp.get("formatting", {}) or {}
+    rules = []
+    if fm.get("oxford_comma"):
+        rules.append("always use the Oxford comma")
+    if fm.get("headings_case"):
+        rules.append(f"headings in {fm['headings_case']}")
+    if fm.get("numbers"):
+        rules.append(f"numbers: {fm['numbers']}")
+    if "max_exclamations" in fm:
+        rules.append(f"at most {fm['max_exclamations']} exclamation mark(s) per piece")
+    if rules:
+        lines.append("Formatting rules: " + "; ".join(rules) + ".")
+
+    inline = fmt(vp.get("writing_samples", ""))
+    if inline and "Paste" not in inline:
+        lines.append(f"\nReal writing samples to match in voice and rhythm:\n{inline}")
+
+    block = "\n".join(line for line in lines if line.strip().rstrip(":"))
+
+    # Inject the authoritative brand guide verbatim — it always wins on conflicts.
+    guide = config.read_config_text(vp.get("brand_guide_file", ""))
+    if guide:
+        block += (
+            "\n\n=== AUTHORITATIVE BRAND VOICE GUIDE (follow exactly; it overrides "
+            "anything above on conflict) ===\n" + guide
+        )
+
+    # Inject real example posts as few-shot voice references.
+    sample_files = vp.get("sample_files", []) or []
+    sample_texts = [t for f in sample_files if (t := config.read_config_text(f))]
+    if sample_texts:
+        block += (
+            "\n\n=== EXAMPLE POSTS (match this exact voice, rhythm, and structure; "
+            "do not copy their content) ===\n" + "\n\n".join(sample_texts)
+        )
+
+    return block
 
 
 # ── Topic extraction ─────────────────────────────────────────────────────────

@@ -49,6 +49,19 @@ def voice_profile() -> dict[str, Any]:
     return _read_yaml(VOICE_PROFILE_FILE)
 
 
+def read_config_text(filename: str) -> str:
+    """Read a text/markdown file from the config/ directory (e.g. brand_voice.md).
+
+    Returns "" if the file is missing so callers can treat it as optional.
+    """
+    if not filename:
+        return ""
+    path = CONFIG_DIR / filename
+    if not path.exists():
+        return ""
+    return path.read_text(encoding="utf-8").strip()
+
+
 def env(name: str, default: str | None = None) -> str | None:
     """Read an environment variable (from .env or the shell)."""
     value = os.getenv(name, default)
