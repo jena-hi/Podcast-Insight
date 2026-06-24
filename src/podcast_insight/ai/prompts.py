@@ -210,6 +210,54 @@ def promo_prompt(
     return system, user
 
 
+# ── TikTok ───────────────────────────────────────────────────────────────────
+
+def _visual_block() -> str:
+    bv = config.brand_visual()
+    if not bv:
+        return ""
+    colors = bv.get("colors", {}) or {}
+    color_str = ", ".join(f"{k} {v}" for k, v in colors.items())
+    fonts = bv.get("fonts", {}) or {}
+    return (
+        f"Brand: {bv.get('brand_name', '')}. "
+        f"Fonts: title={fonts.get('title', '')}, heading={fonts.get('heading', '')}. "
+        f"Colors: {color_str}. "
+        f"Tone: {bv.get('tone', '')}. Voice: {bv.get('voice', '')}. "
+        f"Key phrases (use one where it fits, naturally): "
+        f"{', '.join(bv.get('key_phrases', []))}."
+    )
+
+
+def tiktok_prompt(topic: dict, episode_title: str, duration: int, hashtags_max: int) -> tuple[str, str]:
+    system = (
+        "You are a short-form video producer for a bold, disruptive podcast. You "
+        "script 15-second vertical TikToks that stop the scroll and make one sharp "
+        "point. You match the brand voice exactly and never invent facts.\n\n"
+        "BRAND VOICE:\n" + _voice_block() + "\n\nVISUAL BRAND:\n" + _visual_block()
+    )
+    user = (
+        f"Episode: \"{episode_title}\".\n"
+        f"Make a {duration}-second vertical (9:16) TikTok about this single topic:\n"
+        f"{json.dumps(topic, indent=2)}\n\n"
+        f"Return ONLY valid JSON in exactly this shape:\n"
+        f'{{"hook": "first line, <8 words, stops the scroll", '
+        f'"scenes": [{{"role": "hook|point|cta", "start": 0, "duration": 3, '
+        f'"on_screen_text": "short punchy text for the screen", '
+        f'"visual": "background/motion note using the brand colors"}}], '
+        f'"voiceover_script": "~40 words, sounds great read aloud in ~{duration}s", '
+        f'"caption": "the TikTok caption in brand voice", '
+        f'"hashtags": ["..."], "music_mood": "e.g. tense, building, energetic"}}\n\n'
+        f"Rules:\n"
+        f"- 3 scenes: hook (~0-3s), point (~3-12s), cta (~12-{duration}s); durations sum to {duration}.\n"
+        f"- on_screen_text must be SHORT (a phone-screen line), bold, in voice.\n"
+        f"- The CTA points to the full episode (e.g. 'Full convo on YouTube & Spotify').\n"
+        f"- Up to {hashtags_max} hashtags. Honor all brand voice rules (no em dashes, etc.).\n"
+        f"- voiceover_script is plain spoken text, no stage directions."
+    )
+    return system, user
+
+
 # ── Insights ─────────────────────────────────────────────────────────────────
 
 def insights_prompt(scored_summary: str) -> tuple[str, str]:

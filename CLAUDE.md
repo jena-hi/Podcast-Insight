@@ -84,6 +84,28 @@ Rules:
 - Pull at a human cadence (monthly). Don't hammer the account.
 - After importing, show the user the dashboards and offer to run `insights`.
 
+## TikTok videos (Canva — run in-session)
+
+`podcast-insight tiktok <slug>` generates, per topic, a 15s storyboard +
+voiceover script + caption into `data/output/tiktok/<slug>/` (full reference:
+`docs/TIKTOK.md`). To actually build the videos, use the **Canva** MCP tools:
+
+1. Read each `data/output/tiktok/<slug>/topic-N.json` and `config/brand_visual.yaml`.
+2. Ensure a brand kit/template reflects the brand (fonts Michroma + Roboto, the
+   magenta/purple palette, logo) — `list-brand-kits`, `search-brand-templates`,
+   or `create-brand-template-draft`.
+3. For each topic, create a 1080×1920 (9:16) video design: animate the scenes'
+   `on_screen_text` on brand backgrounds (use the gradient), add the voiceover
+   mp3 if present and background music matching `music_mood`. Use
+   `generate-design` / `generate-design-structured` / editing operations.
+4. Export MP4 via `get-export-formats` + `export-design` into the same folder.
+
+Rules:
+- It's branded MOTION-TEXT, not edits of real podcast footage.
+- Some video/export features need Canva Pro — if unavailable, say so and fall
+  back (export frames or a simpler design); don't claim a video exported if it didn't.
+- Show the user previews/links before they post. Don't post to TikTok automatically.
+
 ## Don't
 
 - Don't commit `.env` or anything under `secrets/`.

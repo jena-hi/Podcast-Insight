@@ -1,0 +1,50 @@
+# ─── Unscripted Intelligence — Visual Brand (for TikTok / video / design) ───────
+# Captured from the brand guide PDF. The hex values are eyeballed from the colour
+# swatches — confirm/replace with your exact brand hexes when you have them.
+# This drives the TikTok storyboards and the Canva render (fonts, colours, logo).
+
+brand_name: "Unscripted Intelligence"
+mission: >
+  Challenge perspectives, connect humans, and drive meaningful action that
+  amplifies the human intelligence needed in an AI-driven world.
+
+fonts:
+  title: "Michroma"      # big titles / hooks
+  heading: "Roboto"      # body / supporting text
+
+# Palette. `base` is the background, `accent` the primary pop colour.
+colors:
+  base: "#000000"        # black background
+  text: "#FFFFFF"        # white text
+  accent: "#FF15C3"      # bright magenta (primary pop)
+  orchid: "#A23DA8"
+  deep_purple: "#3C1A55"
+  royal_blue: "#243E8C"
+  violet: "#5512A6"
+# Suggested gradient for backgrounds/motion (matches the logo swirl).
+gradient:
+  - "#FF15C3"
+  - "#5512A6"
+  - "#243E8C"
+
+# Voice for on-screen copy + captions (see also config/brand_voice.md).
+voice: "Bold, candid, human-centered"
+tone: "Disruptive with purpose"
+key_phrases:
+  - "Unavoidable Truth"
+  - "Unscripted conversations"
+  - "Making waves & shaking things up"
+
+logo:
+  # Drop the logo file here (or a URL) so Canva can place it on each video.
+  path: ""               # e.g. assets/unscripted-logo.png
+  url: ""
+  placement: "bottom-center, small"
+
+# TikTok / short-video defaults.
+video:
+  aspect: "9:16"
+  width: 1080
+  height: 1920
+  duration_seconds: 15
+  safe_margins: "keep text clear of TikTok's right-side UI and bottom caption area"

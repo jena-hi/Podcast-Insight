@@ -69,6 +69,35 @@ def write_topics(episode: Episode) -> Path:
     return path
 
 
+def write_tiktok(episode: Episode, videos) -> Path:
+    """Write each TikTok spec (JSON) + a human-readable summary for the episode."""
+    out = _dir("tiktok") / episode.slug
+    out.mkdir(parents=True, exist_ok=True)
+    lines = [f"# TikTok scripts — {episode.title}", ""]
+    for i, v in enumerate(videos, 1):
+        (out / f"topic-{i}.json").write_text(v.model_dump_json(indent=2), encoding="utf-8")
+        lines.append(f"## {i}. {v.topic_title}  ({v.total_duration}s)")
+        lines.append(f"**Hook:** {v.hook}")
+        lines.append("")
+        lines.append("**Storyboard:**")
+        for s in v.scenes:
+            lines.append(f"- [{s.start:g}–{s.start + s.duration:g}s] *{s.role}* — "
+                         f"{s.on_screen_text}  ({s.visual})")
+        lines.append("")
+        lines.append(f"**Voiceover:** {v.voiceover_script}")
+        if v.voiceover_audio_path:
+            lines.append(f"**Voiceover audio:** {v.voiceover_audio_path}")
+        lines.append(f"**Music:** {v.music_mood}")
+        lines.append("")
+        lines.append(f"**Caption:** {v.caption}")
+        if v.hashtags:
+            lines.append(" ".join(f"#{h.lstrip('#')}" for h in v.hashtags))
+        lines.append("")
+    path = out / "summary.md"
+    path.write_text("\n".join(lines), encoding="utf-8")
+    return path
+
+
 def write_insights(markdown: str, stamp: str | None = None) -> Path:
     """Write insights to data/output/ and a git-tracked copy in reports/.
 

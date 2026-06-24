@@ -118,3 +118,37 @@ def test_linkedin_event_folds_into_episode(tmp_path, monkeypatch):
     assert len(li) == 1
     assert li[0].attendees == 90 and li[0].impressions == 3000
     assert li[0].engagement == 52  # reactions(40) + comments(12)
+
+
+def test_tiktok_video_duration():
+    from podcast_insight.tiktok.models import Scene, TikTokVideo
+
+    v = TikTokVideo(
+        topic_title="T",
+        scenes=[
+            Scene(role="hook", start=0, duration=3, on_screen_text="a"),
+            Scene(role="point", start=3, duration=9, on_screen_text="b"),
+            Scene(role="cta", start=12, duration=3, on_screen_text="c"),
+        ],
+    )
+    assert v.total_duration == 15.0
+
+
+def test_tiktok_generate_dry_run(tmp_path, monkeypatch):
+    # No API key -> dry run -> returns no videos but writes a prompt, no crash.
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    from podcast_insight import config
+    from podcast_insight.tiktok.generator import generate_all
+    from podcast_insight.models import Episode, Topic
+
+    monkeypatch.setattr(config, "OUTPUT_DIR", tmp_path / "output")
+    ep = Episode(slug="e", title="E", topics=[Topic(title="AI in sales")])
+    videos, results = generate_all(ep)
+    assert videos == []
+    assert results and results[0].dry_run
+
+
+def test_tiktok_voiceover_disabled_without_key(monkeypatch):
+    monkeypatch.delenv("TTS_API_KEY", raising=False)
+    from podcast_insight.tiktok import voiceover
+    assert voiceover.enabled() is False

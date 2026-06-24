@@ -29,6 +29,7 @@ REPORTS_DIR = PROJECT_ROOT / "reports"
 
 SETTINGS_FILE = CONFIG_DIR / "settings.yaml"
 VOICE_PROFILE_FILE = CONFIG_DIR / "voice_profile.yaml"
+BRAND_VISUAL_FILE = CONFIG_DIR / "brand_visual.yaml"
 
 # Load .env once, on import, so os.getenv works everywhere.
 load_dotenv(PROJECT_ROOT / ".env")
@@ -51,6 +52,12 @@ def settings() -> dict[str, Any]:
 def voice_profile() -> dict[str, Any]:
     """The parsed contents of config/voice_profile.yaml."""
     return _read_yaml(VOICE_PROFILE_FILE)
+
+
+@lru_cache(maxsize=1)
+def brand_visual() -> dict[str, Any]:
+    """The parsed contents of config/brand_visual.yaml (fonts/colors/video)."""
+    return _read_yaml(BRAND_VISUAL_FILE)
 
 
 def read_config_text(filename: str) -> str:

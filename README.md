@@ -129,6 +129,7 @@ points at the other two via `brand_guide_file` and `sample_files`.
 | `podcast-insight promo <episode>` | Write a caption promoting the blog post. |
 | `podcast-insight clips add <episode> ...` | Add a highlight clip (title, timestamps, note). |
 | `podcast-insight social <episode>` | Write social copy for each clip. |
+| `podcast-insight tiktok <episode>` | Generate a 15s TikTok (storyboard + voiceover + caption) per topic; render in Canva. |
 | `podcast-insight run <episode>` | Do topics → blog → promo → clip social in one go. |
 | `podcast-insight auth youtube` | One-time OAuth for private YouTube analytics. |
 | `podcast-insight analytics pull <episode>` | Pull YouTube/Spotify/Apple stats. *(needs API setup)* |
@@ -182,7 +183,9 @@ src/podcast_insight/
       impressions, engagement, who commented) via ConnectSafely
       (see `docs/LINKEDIN.md`)
 - [x] Monthly scheduling for YouTube/Spotify (GitHub Actions)
-- [ ] Auto-publishing to LinkedIn / YouTube (stubs in `publish/`)
+- [x] TikTok layer — 15s branded videos per topic (storyboard + voiceover +
+      caption) rendered in Canva (see `docs/TIKTOK.md`)
+- [ ] Auto-publishing to LinkedIn / YouTube / TikTok (stubs in `publish/`)
 
 See `docs/CONNECTING_ANALYTICS.md` and `docs/AUTOMATION.md` for the next steps,
 each written for someone who's done "some API and coding stuff."

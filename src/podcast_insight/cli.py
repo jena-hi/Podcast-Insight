@@ -420,6 +420,48 @@ def insights(stamp: str | None) -> None:
         console.print(f"[green]Insights written[/] → reports/insights-latest.md")
 
 
+# ── tiktok ───────────────────────────────────────────────────────────────────
+@cli.command()
+@click.argument("slug")
+@click.option("--voiceover/--no-voiceover", default=True,
+              help="Synthesize voiceover audio if a TTS provider is configured.")
+def tiktok(slug: str, voiceover: bool) -> None:
+    """Generate a 15s TikTok spec (storyboard + voiceover + caption) per topic."""
+    from .tiktok import voiceover as tts
+    from .tiktok.generator import generate_all
+
+    episode = storage.load(slug)
+    videos, results = generate_all(episode)
+    for r in results:
+        if getattr(r, "dry_run", False):
+            _note_dry_run(r)
+            break
+    if not videos:
+        return
+
+    # Optional voiceover audio.
+    if voiceover and tts.enabled():
+        out_dir = config.OUTPUT_DIR / "tiktok" / episode.slug
+        for i, v in enumerate(videos, 1):
+            try:
+                path = tts.synthesize(v.voiceover_script, out_dir / f"topic-{i}-voiceover.mp3")
+                if path:
+                    v.voiceover_audio_path = str(path.relative_to(config.PROJECT_ROOT))
+            except Exception as exc:  # noqa: BLE001
+                console.print(f"[yellow]Voiceover {i} failed: {exc}[/]")
+    elif voiceover:
+        console.print("[dim]TTS not configured — wrote voiceover scripts only "
+                      "(set TTS_API_KEY to synthesize audio).[/]")
+
+    path = outputs.write_tiktok(episode, videos)
+    console.print(f"[green]{len(videos)} TikTok script(s) written[/] → "
+                  f"{path.parent.relative_to(config.PROJECT_ROOT)}/")
+    for v in videos:
+        console.print(f"  • {v.topic_title} — hook: \"{v.hook}\"")
+    console.print("\nNext: render in Canva (see docs/TIKTOK.md) — in a Claude "
+                  "session, ask to \"build the TikToks in Canva and export them.\"")
+
+
 # ── linkedin ─────────────────────────────────────────────────────────────────
 @cli.group()
 def linkedin() -> None:
