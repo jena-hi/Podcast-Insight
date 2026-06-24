@@ -37,10 +37,43 @@ def _voice_block() -> str:
         lines.append(f"Signature phrases (use naturally, don't overdo): {fmt(vp['signature_phrases'])}")
     if vp.get("avoid"):
         lines.append(f"Strictly AVOID: {fmt(vp['avoid'])}")
-    samples = fmt(vp.get("writing_samples", ""))
-    if samples and "Paste" not in samples:
-        lines.append(f"\nReal writing samples to match in voice and rhythm:\n{samples}")
-    return "\n".join(line for line in lines if line.strip().rstrip(":"))
+    fm = vp.get("formatting", {}) or {}
+    rules = []
+    if fm.get("oxford_comma"):
+        rules.append("always use the Oxford comma")
+    if fm.get("headings_case"):
+        rules.append(f"headings in {fm['headings_case']}")
+    if fm.get("numbers"):
+        rules.append(f"numbers: {fm['numbers']}")
+    if "max_exclamations" in fm:
+        rules.append(f"at most {fm['max_exclamations']} exclamation mark(s) per piece")
+    if rules:
+        lines.append("Formatting rules: " + "; ".join(rules) + ".")
+
+    inline = fmt(vp.get("writing_samples", ""))
+    if inline and "Paste" not in inline:
+        lines.append(f"\nReal writing samples to match in voice and rhythm:\n{inline}")
+
+    block = "\n".join(line for line in lines if line.strip().rstrip(":"))
+
+    # Inject the authoritative brand guide verbatim — it always wins on conflicts.
+    guide = config.read_config_text(vp.get("brand_guide_file", ""))
+    if guide:
+        block += (
+            "\n\n=== AUTHORITATIVE BRAND VOICE GUIDE (follow exactly; it overrides "
+            "anything above on conflict) ===\n" + guide
+        )
+
+    # Inject real example posts as few-shot voice references.
+    sample_files = vp.get("sample_files", []) or []
+    sample_texts = [t for f in sample_files if (t := config.read_config_text(f))]
+    if sample_texts:
+        block += (
+            "\n\n=== EXAMPLE POSTS (match this exact voice, rhythm, and structure; "
+            "do not copy their content) ===\n" + "\n\n".join(sample_texts)
+        )
+
+    return block
 
 
 # ── Topic extraction ─────────────────────────────────────────────────────────
@@ -137,6 +170,90 @@ def social_prompt(
         f"Write copy for these platforms:\n{wanted}\n\n{ht}\n\n"
         f"Return ONLY valid JSON keyed by platform, e.g. {{{keys}: \"...\"}}. "
         f"No commentary outside the JSON."
+    )
+    return system, user
+
+
+# ── Blog promo caption ───────────────────────────────────────────────────────
+
+def promo_prompt(
+    episode_title: str,
+    blog_markdown: str,
+    topics: list[dict],
+    platforms: list[str],
+    hashtags_cfg: dict,
+) -> tuple[str, str]:
+    system = (
+        "You write social captions that drive people to read a blog post. You "
+        "match the host's voice exactly, tease the single most compelling idea, "
+        "and never overpromise or clickbait dishonestly.\n\n"
+        "VOICE PROFILE:\n" + _voice_block()
+    )
+    ht = ""
+    if hashtags_cfg.get("enabled", True):
+        ht = f"Include up to {hashtags_cfg.get('max', 5)} relevant hashtags."
+    keys = ", ".join(f'"{p}"' for p in platforms)
+    topics_json = json.dumps(topics, indent=2)
+    user = (
+        f"Write a caption (or captions) promoting the blog post for the episode "
+        f"\"{episode_title}\".\n\n"
+        f"The post's backbone topics:\n{topics_json}\n\n"
+        f"Goal: get the reader to click through and read the post. Lead with the "
+        f"sharpest hook, tease one core idea (don't summarize everything), end "
+        f"with a clear CTA to read the blog. Use a placeholder '[BLOG LINK]' where "
+        f"the link goes.\n{ht}\n\n"
+        f"Write one caption per platform: {', '.join(platforms)}.\n"
+        f"Return ONLY valid JSON keyed by platform, e.g. {{{keys}: \"...\"}}. "
+        f"No commentary outside the JSON.\n\n"
+        f"For reference, here is the blog post:\n\n{blog_markdown}"
+    )
+    return system, user
+
+
+# ── TikTok ───────────────────────────────────────────────────────────────────
+
+def _visual_block() -> str:
+    bv = config.brand_visual()
+    if not bv:
+        return ""
+    colors = bv.get("colors", {}) or {}
+    color_str = ", ".join(f"{k} {v}" for k, v in colors.items())
+    fonts = bv.get("fonts", {}) or {}
+    return (
+        f"Brand: {bv.get('brand_name', '')}. "
+        f"Fonts: title={fonts.get('title', '')}, heading={fonts.get('heading', '')}. "
+        f"Colors: {color_str}. "
+        f"Tone: {bv.get('tone', '')}. Voice: {bv.get('voice', '')}. "
+        f"Key phrases (use one where it fits, naturally): "
+        f"{', '.join(bv.get('key_phrases', []))}."
+    )
+
+
+def tiktok_prompt(topic: dict, episode_title: str, duration: int, hashtags_max: int) -> tuple[str, str]:
+    system = (
+        "You are a short-form video producer for a bold, disruptive podcast. You "
+        "script 15-second vertical TikToks that stop the scroll and make one sharp "
+        "point. You match the brand voice exactly and never invent facts.\n\n"
+        "BRAND VOICE:\n" + _voice_block() + "\n\nVISUAL BRAND:\n" + _visual_block()
+    )
+    user = (
+        f"Episode: \"{episode_title}\".\n"
+        f"Make a {duration}-second vertical (9:16) TikTok about this single topic:\n"
+        f"{json.dumps(topic, indent=2)}\n\n"
+        f"Return ONLY valid JSON in exactly this shape:\n"
+        f'{{"hook": "first line, <8 words, stops the scroll", '
+        f'"scenes": [{{"role": "hook|point|cta", "start": 0, "duration": 3, '
+        f'"on_screen_text": "short punchy text for the screen", '
+        f'"visual": "background/motion note using the brand colors"}}], '
+        f'"voiceover_script": "~40 words, sounds great read aloud in ~{duration}s", '
+        f'"caption": "the TikTok caption in brand voice", '
+        f'"hashtags": ["..."], "music_mood": "e.g. tense, building, energetic"}}\n\n'
+        f"Rules:\n"
+        f"- 3 scenes: hook (~0-3s), point (~3-12s), cta (~12-{duration}s); durations sum to {duration}.\n"
+        f"- on_screen_text must be SHORT (a phone-screen line), bold, in voice.\n"
+        f"- The CTA points to the full episode (e.g. 'Full convo on YouTube & Spotify').\n"
+        f"- Up to {hashtags_max} hashtags. Honor all brand voice rules (no em dashes, etc.).\n"
+        f"- voiceover_script is plain spoken text, no stage directions."
     )
     return system, user
 

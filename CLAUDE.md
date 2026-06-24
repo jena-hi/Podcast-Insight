@@ -1,0 +1,112 @@
+# Working in this repo (instructions for Claude)
+
+This is **Podcast Insight** — it turns a podcast episode into a blog + social
+copy, and pulls performance analytics. See `README.md` for the full picture.
+
+## When the user pastes a YouTube link
+
+If the user pastes a YouTube URL (or says "make content from this video"), treat
+it as a request to run the content pipeline:
+
+```bash
+podcast-insight from-youtube "<the url>"
+```
+
+That fetches the transcript, extracts the top 3 topics, writes a blog post in the
+brand voice, and writes a promo caption for the blog. Results land in
+`data/output/` (blog, promo, topics).
+
+Then:
+1. Show the user the generated blog and the promo caption.
+2. Ask if they want edits (tone, length, angle) and regenerate if so.
+3. Remind them to commit the new episode file (`data/episodes/<slug>.json`) so
+   the monthly analytics job can track it.
+
+If `from-youtube` fails to get a transcript (YouTube blocks some cloud IPs), say
+so plainly and suggest running it locally, or fall back to asking for a
+transcript file and using `podcast-insight ingest`.
+
+## Voice is non-negotiable
+
+All blog/social generation must follow the brand voice in
+`config/brand_voice.md` (authoritative), `config/voice_profile.yaml`, and the
+examples in `config/caption_samples.md`. Key hard rules: no em dashes, Oxford
+comma, sentence-case headings, "we" voice, never "soft skills" / "fix education"
+/ fear framing. These are injected into prompts automatically — don't bypass them.
+
+## Analytics
+
+- `podcast-insight analytics pull <slug>` (or `pull-all`) pulls YouTube + Spotify.
+- `podcast-insight insights` ranks episodes and writes recommendations to `reports/`.
+- The monthly cloud job is `.github/workflows/monthly-analytics.yml`.
+- Spotify uses an UNOFFICIAL session-cookie connector — if it errors, it likely
+  needs the captured request URL re-grabbed (see docs/CONNECTING_ANALYTICS.md).
+
+## LinkedIn analytics (via ConnectSafely — run in-session, not in the cloud job)
+
+When the user asks to pull LinkedIn analytics, use the **ConnectSafely** MCP tools
+(the account is linked; a paid API seat must be allocated first). Full reference:
+`docs/LINKEDIN.md`.
+
+**Monthly page stats** (impressions, engagement rate, new followers) — pull from
+the COMPANY PAGE configured in `config/settings.yaml → linkedin`, NOT the personal
+profile. Default page: **Human Intelligence Movement** (`company_id: 101674670`,
+`urn:li:fsd_company:101674670`). The account also manages **ProSolve** (691327).
+- Follower growth: `mcp__ConnectSafely__get-company-followers` for that company id.
+- **`engagement_rate` is the headline metric the user cares about: the AVERAGE
+  MONTHLY engagement rate.** Compute it for the month's posts: gather the org's
+  posts in the period via `mcp__ConnectSafely__get-latest-posts`, then per post
+  `get-post-reactions` + `get-all-post-comments` (+ shares), and impressions via
+  `scrape-post` where available. Engagement rate per post = engagements ÷
+  impressions × 100; the monthly figure is the mean of those per-post rates (or
+  total engagements ÷ total impressions × 100 if per-post impressions are
+  missing). Put this in `engagement_rate`; also fill `impressions` (month total).
+- Confirm the company id with `get-organizations` if unsure.
+- Map to the page JSON shape (see `examples/linkedin_page.example.json`), set
+  `period` (e.g. "2026-06"), write a temp JSON, then run
+  `podcast-insight linkedin import-page --file <json>`.
+
+**Per-event stats** (podcasts run as LinkedIn Events — attendees, impressions,
+engagement, and who commented). The events are hosted on the **Human Intelligence
+Movement page** (`urn:li:fsd_company:101674670`), so use that org as the host
+context when resolving the event and its posts.
+- Use `mcp__ConnectSafely__get-event-attendees` for attendees, and
+  `get-post-comments` / `get-all-post-comments` + `get-post-reactions` on the
+  event's live-video post (published by the HIM page) for commenters and reactions.
+- Map to the event JSON shape (`examples/linkedin_event.example.json`), set
+  `episode_slug` to the matching episode, write a temp JSON, then run
+  `podcast-insight linkedin import-event --file <json>`.
+
+Rules:
+- Commenter/attendee NAMES are PII → they only go into the event JSON / local
+  dashboards. Never write names into `reports/` or episode records or commits.
+- Don't allocate seats or make billable ConnectSafely calls without the user's OK.
+- Pull at a human cadence (monthly). Don't hammer the account.
+- After importing, show the user the dashboards and offer to run `insights`.
+
+## TikTok videos (Canva — run in-session)
+
+`podcast-insight tiktok <slug>` generates, per topic, a 15s storyboard +
+voiceover script + caption into `data/output/tiktok/<slug>/` (full reference:
+`docs/TIKTOK.md`). To actually build the videos, use the **Canva** MCP tools:
+
+1. Read each `data/output/tiktok/<slug>/topic-N.json` and `config/brand_visual.yaml`.
+2. Ensure a brand kit/template reflects the brand (fonts Michroma + Roboto, the
+   magenta/purple palette, logo) — `list-brand-kits`, `search-brand-templates`,
+   or `create-brand-template-draft`.
+3. For each topic, create a 1080×1920 (9:16) video design: animate the scenes'
+   `on_screen_text` on brand backgrounds (use the gradient), add the voiceover
+   mp3 if present and background music matching `music_mood`. Use
+   `generate-design` / `generate-design-structured` / editing operations.
+4. Export MP4 via `get-export-formats` + `export-design` into the same folder.
+
+Rules:
+- It's branded MOTION-TEXT, not edits of real podcast footage.
+- Some video/export features need Canva Pro — if unavailable, say so and fall
+  back (export frames or a simpler design); don't claim a video exported if it didn't.
+- Show the user previews/links before they post. Don't post to TikTok automatically.
+
+## Don't
+
+- Don't commit `.env` or anything under `secrets/`.
+- Don't post to any platform automatically without explicit confirmation.

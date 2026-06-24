@@ -43,7 +43,7 @@ class AnalyticsRecord(BaseModel):
     insights engine works with whatever is present.
     """
 
-    platform: str                     # "youtube" | "spotify" | "apple"
+    platform: str                     # "youtube" | "spotify" | "apple" | "linkedin"
     pulled_on: date_type
     views: Optional[int] = None
     listens: Optional[int] = None
@@ -53,6 +53,11 @@ class AnalyticsRecord(BaseModel):
     comments: Optional[int] = None
     shares: Optional[int] = None
     subscribers_gained: Optional[int] = None
+    # Cross-platform / LinkedIn-friendly fields.
+    impressions: Optional[int] = None
+    engagement_rate: Optional[float] = None   # percent, e.g. 4.2 means 4.2%
+    attendees: Optional[int] = None           # LinkedIn event attendees
+    new_followers: Optional[int] = None
     # Anything platform-specific that doesn't fit above.
     extra: dict[str, float] = Field(default_factory=dict)
 
@@ -78,6 +83,8 @@ class Episode(BaseModel):
     # Generated + collected data.
     topics: list[Topic] = Field(default_factory=list)
     blog_markdown: str = ""
+    # Social copy promoting the blog itself, keyed by platform.
+    blog_promo: dict[str, str] = Field(default_factory=dict)
     clips: list[Clip] = Field(default_factory=list)
     analytics: list[AnalyticsRecord] = Field(default_factory=list)
 

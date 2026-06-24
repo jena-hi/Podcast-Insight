@@ -11,13 +11,26 @@ build/
 dist/
 .pytest_cache/
 
-# Generated data — keep the folders (via .gitkeep) but not their contents
-data/episodes/*
-!data/episodes/.gitkeep
+# Episode records ARE tracked in git (no secrets in them) so the monthly cloud
+# job can see your episodes and update their analytics. Comment the next two
+# lines back in if you'd rather keep episodes local-only.
+#   data/episodes/*
+#   !data/episodes/.gitkeep
+
+# Raw analytics exports (e.g. Apple CSVs) stay local.
 data/analytics/*
 !data/analytics/.gitkeep
+
+# Regenerable generated content (blogs/social/prompts) stays local.
 data/output/*
 !data/output/.gitkeep
+
+# LinkedIn raw data + event dashboards hold PII (commenter/attendee names) —
+# never commit. Only the name-free page dashboards in reports/ are tracked.
+data/linkedin/
+
+# OAuth tokens / secrets folder — never commit.
+secrets/
 
 # OS
 .DS_Store

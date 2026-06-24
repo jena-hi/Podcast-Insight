@@ -5,7 +5,9 @@ Run `podcast-insight --help` or `podcast-insight <command> --help` for details.
 
 from __future__ import annotations
 
+import json
 import uuid
+from pathlib import Path
 
 import click
 from rich.console import Console
@@ -14,14 +16,19 @@ from rich.table import Table
 from . import config, outputs, storage
 from .ai.blog_writer import write_blog
 from .ai.client import AIClient
+from .ai.promo_writer import write_promo
 from .ai.social_writer import write_social
 from .ai.topic_extractor import extract_topics
 from .analytics.apple import AppleConnector
 from .analytics.base import NotConfigured
 from .analytics.insights import generate_insights
-from .analytics.spotify import SpotifyConnector
+from .analytics.spotify_creators import SpotifyCreatorsConnector
 from .analytics.youtube import YouTubeConnector
 from .ingest.transcript import build_episode
+from .ingest.youtube import build_episode_from_youtube
+from .linkedin import ingest as li_ingest
+from .linkedin import reports as li_reports
+from .linkedin import store as li_store
 from .models import Clip
 
 console = Console()
@@ -164,7 +171,7 @@ def run(slug: str) -> None:
         for i, t in enumerate(found, 1):
             console.print(f"  {i}. {t.title}")
 
-    console.rule("[bold]2/3 Blog")
+    console.rule("[bold]2/4 Blog")
     if episode.topics:
         markdown, r2 = write_blog(episode, client)
         _note_dry_run(r2)
@@ -176,7 +183,19 @@ def run(slug: str) -> None:
     else:
         console.print("  [dim]Skipped (no topics yet — re-run with an API key).[/]")
 
-    console.rule("[bold]3/3 Social")
+    console.rule("[bold]3/4 Blog promo caption")
+    if episode.blog_markdown:
+        promo, rp = write_promo(episode, client)
+        _note_dry_run(rp)
+        if promo:
+            episode.blog_promo = promo
+            storage.save(episode)
+            outputs.write_promo(episode)
+            console.print(f"  Promo caption written for: {', '.join(promo)}.")
+    else:
+        console.print("  [dim]Skipped (no blog yet).[/]")
+
+    console.rule("[bold]4/4 Clip social")
     if episode.clips:
         count, results = write_social(episode, client)
         for r in results:
@@ -191,6 +210,108 @@ def run(slug: str) -> None:
 
     console.rule()
     console.print(f"[green]Done.[/] See [cyan]data/output/[/] for results.")
+
+
+# ── from-youtube (paste a link → blog + promo caption) ───────────────────────
+@cli.command(name="from-youtube")
+@click.argument("url")
+@click.option("--title", default=None, help="Override the title (else uses YouTube's).")
+@click.option("--date", "date_", default=None, help="Air date, YYYY-MM-DD.")
+@click.option("--notes", default="", help="Your notes (optional).")
+def from_youtube(url: str, title: str | None, date_: str | None, notes: str) -> None:
+    """Fetch a YouTube transcript and run topics → blog → promo caption.
+
+    URL can be any YouTube link (watch, youtu.be, live, shorts) or a video id.
+    """
+    console.print(f"[bold]Fetching transcript from YouTube…[/]")
+    try:
+        episode = build_episode_from_youtube(url, title=title, date=date_, notes=notes)
+    except Exception as exc:  # noqa: BLE001
+        console.print(f"[red]Could not fetch transcript:[/] {exc}")
+        raise SystemExit(1)
+    storage.save(episode)
+    console.print(f"[green]Got it:[/] [bold]{episode.title}[/] ({episode.slug}), "
+                  f"{len(episode.transcript.split())} words.\n")
+
+    client = AIClient()
+    if not client.enabled:
+        console.print("[yellow]Dry-run (no API key) — prompts will be written to data/output/prompts/.[/]\n")
+
+    console.rule("[bold]1/3 Topics")
+    found, r1 = extract_topics(episode, client)
+    _note_dry_run(r1)
+    if found:
+        episode.topics = found
+        storage.save(episode)
+        outputs.write_topics(episode)
+        for i, t in enumerate(found, 1):
+            console.print(f"  {i}. {t.title}")
+
+    console.rule("[bold]2/3 Blog")
+    if episode.topics:
+        markdown, r2 = write_blog(episode, client)
+        _note_dry_run(r2)
+        if markdown:
+            episode.blog_markdown = markdown
+            storage.save(episode)
+            outputs.write_blog(episode)
+            console.print("  Blog draft written.")
+
+    console.rule("[bold]3/3 Blog promo caption")
+    if episode.blog_markdown:
+        promo, rp = write_promo(episode, client)
+        _note_dry_run(rp)
+        if promo:
+            episode.blog_promo = promo
+            storage.save(episode)
+            outputs.write_promo(episode)
+            console.print(f"  Promo caption written for: {', '.join(promo)}.")
+
+    console.rule()
+    console.print(f"[green]Done.[/] See [cyan]data/output/[/]. "
+                  f"Commit the new episode so the monthly analytics job can track it.")
+
+
+# ── promo (blog caption only) ────────────────────────────────────────────────
+@cli.command()
+@click.argument("slug")
+def promo(slug: str) -> None:
+    """Write a social caption promoting the blog post."""
+    episode = storage.load(slug)
+    captions, result = write_promo(episode)
+    _note_dry_run(result)
+    if captions:
+        episode.blog_promo = captions
+        storage.save(episode)
+        path = outputs.write_promo(episode)
+        console.print(f"[green]Promo caption written[/] → {path.relative_to(config.PROJECT_ROOT)}")
+
+
+# ── auth (one-time OAuth setup) ──────────────────────────────────────────────
+@cli.group()
+def auth() -> None:
+    """One-time authentication setup for analytics connectors."""
+
+
+@auth.command("youtube")
+@click.option("--client-secret", "client_secret", default=None,
+              help="Path to your OAuth client-secret JSON (else uses YOUTUBE_OAUTH_CLIENT_SECRET_FILE).")
+def auth_youtube(client_secret: str | None) -> None:
+    """Run the one-time YouTube Analytics OAuth consent and save a token."""
+    from .analytics.youtube_oauth import run_oauth_flow
+
+    secret_file = client_secret or config.env("YOUTUBE_OAUTH_CLIENT_SECRET_FILE")
+    if not secret_file:
+        console.print("[red]Need a client-secret JSON.[/] Pass --client-secret or set "
+                      "YOUTUBE_OAUTH_CLIENT_SECRET_FILE in .env. See docs/CONNECTING_ANALYTICS.md.")
+        raise SystemExit(1)
+    refresh_token = run_oauth_flow(secret_file)
+    console.print("[green]Authorized.[/] Token saved locally.")
+    if refresh_token:
+        console.print("\nFor the cloud (GitHub Actions) job, store these as secrets:")
+        console.print("  YOUTUBE_OAUTH_REFRESH_TOKEN = [bold](shown below)[/]")
+        console.print(f"\n[cyan]{refresh_token}[/]\n")
+        console.print("(Also store YOUTUBE_OAUTH_CLIENT_ID and YOUTUBE_OAUTH_CLIENT_SECRET.)")
 
 
 # ── set platform ids ─────────────────────────────────────────────────────────
@@ -218,42 +339,66 @@ def analytics() -> None:
     """Pull performance data from platforms."""
 
 
-@analytics.command("pull")
-@click.argument("slug")
-def analytics_pull(slug: str) -> None:
-    """Pull analytics for an episode from configured platforms."""
-    episode = storage.load(slug)
+_CONNECTORS = {
+    "youtube": YouTubeConnector,
+    "spotify": SpotifyCreatorsConnector,
+    "apple": AppleConnector,
+}
+
+
+def _pull_episode(episode, quiet: bool = False) -> int:
+    """Pull all configured platforms for one episode. Returns records added."""
     enabled = config.settings().get("analytics", {}).get("platforms", [])
-    connectors = {
-        "youtube": YouTubeConnector,
-        "spotify": SpotifyConnector,
-        "apple": AppleConnector,
-    }
     new_records = []
     for name in enabled:
-        ctor = connectors.get(name)
+        ctor = _CONNECTORS.get(name)
         if not ctor:
             continue
         try:
             record = ctor().fetch(episode)
             if record:
                 new_records.append(record)
-                console.print(f"[green]{name}:[/] pulled.")
-            else:
+                if not quiet:
+                    console.print(f"[green]{name}:[/] pulled.")
+            elif not quiet:
                 console.print(f"[yellow]{name}:[/] no data returned.")
         except NotConfigured as exc:
-            console.print(f"[dim]{name}: skipped — {exc}[/]")
+            if not quiet:
+                console.print(f"[dim]{name}: skipped — {exc}[/]")
         except Exception as exc:  # noqa: BLE001
             console.print(f"[red]{name}: error — {exc}[/]")
     if new_records:
-        # Replace same-platform records pulled today; keep history otherwise.
         episode.analytics.extend(new_records)
         storage.save(episode)
-        console.print(f"[green]Saved {len(new_records)} record(s).[/]")
+    return len(new_records)
+
+
+@analytics.command("pull")
+@click.argument("slug")
+def analytics_pull(slug: str) -> None:
+    """Pull analytics for one episode from configured platforms."""
+    episode = storage.load(slug)
+    added = _pull_episode(episode)
+    console.print(f"[green]Saved {added} record(s).[/]" if added else "[yellow]No records saved.[/]")
+
+
+@analytics.command("pull-all")
+def analytics_pull_all() -> None:
+    """Pull analytics for EVERY episode (used by the monthly job)."""
+    episodes = storage.all_episodes()
+    if not episodes:
+        console.print("No episodes found.")
+        return
+    total = 0
+    for ep in episodes:
+        console.print(f"[bold]{ep.slug}[/]")
+        total += _pull_episode(ep)
+    console.print(f"\n[green]Done. {total} record(s) across {len(episodes)} episode(s).[/]")
 
 
 @cli.command()
-def insights() -> None:
+@click.option("--stamp", default=None, help="Label for the saved report, e.g. 2026-06.")
+def insights(stamp: str | None) -> None:
     """Rank top performers and generate recommendations across all episodes."""
     episodes = storage.all_episodes()
     if not episodes:
@@ -271,8 +416,130 @@ def insights() -> None:
 
     _note_dry_run(result)
     if markdown:
-        path = outputs.write_insights(markdown)
-        console.print(f"[green]Insights written[/] → {path.relative_to(config.PROJECT_ROOT)}")
+        outputs.write_insights(markdown, stamp=stamp)
+        console.print(f"[green]Insights written[/] → reports/insights-latest.md")
+
+
+# ── tiktok ───────────────────────────────────────────────────────────────────
+@cli.command()
+@click.argument("slug")
+@click.option("--voiceover/--no-voiceover", default=True,
+              help="Synthesize voiceover audio if a TTS provider is configured.")
+def tiktok(slug: str, voiceover: bool) -> None:
+    """Generate a 15s TikTok spec (storyboard + voiceover + caption) per topic."""
+    from .tiktok import voiceover as tts
+    from .tiktok.generator import generate_all
+
+    episode = storage.load(slug)
+    videos, results = generate_all(episode)
+    for r in results:
+        if getattr(r, "dry_run", False):
+            _note_dry_run(r)
+            break
+    if not videos:
+        return
+
+    # Optional voiceover audio.
+    if voiceover and tts.enabled():
+        out_dir = config.OUTPUT_DIR / "tiktok" / episode.slug
+        for i, v in enumerate(videos, 1):
+            try:
+                path = tts.synthesize(v.voiceover_script, out_dir / f"topic-{i}-voiceover.mp3")
+                if path:
+                    v.voiceover_audio_path = str(path.relative_to(config.PROJECT_ROOT))
+            except Exception as exc:  # noqa: BLE001
+                console.print(f"[yellow]Voiceover {i} failed: {exc}[/]")
+    elif voiceover:
+        console.print("[dim]TTS not configured — wrote voiceover scripts only "
+                      "(set TTS_API_KEY to synthesize audio).[/]")
+
+    path = outputs.write_tiktok(episode, videos)
+    console.print(f"[green]{len(videos)} TikTok script(s) written[/] → "
+                  f"{path.parent.relative_to(config.PROJECT_ROOT)}/")
+    for v in videos:
+        console.print(f"  • {v.topic_title} — hook: \"{v.hook}\"")
+    console.print("\nNext: render in Canva (see docs/TIKTOK.md) — in a Claude "
+                  "session, ask to \"build the TikToks in Canva and export them.\"")
+
+
+# ── linkedin ─────────────────────────────────────────────────────────────────
+@cli.group()
+def linkedin() -> None:
+    """LinkedIn analytics: monthly page dashboard + per-event dashboards.
+
+    Data is gathered via the ConnectSafely connector in a Claude session (see
+    CLAUDE.md / docs/LINKEDIN.md), or supplied manually as JSON. Commenter and
+    attendee NAMES are stored locally only (never committed to git).
+    """
+
+
+@linkedin.command("import-page")
+@click.option("--file", "file_", required=True, type=click.Path(exists=True, dir_okay=False),
+              help="JSON file with the monthly page metrics.")
+def linkedin_import_page(file_: str) -> None:
+    """Import a monthly LinkedIn Page snapshot from JSON and build the dashboard."""
+    data = json.loads(Path(file_).read_text(encoding="utf-8"))
+    snapshot = li_ingest.import_page(data)
+    path = li_reports.write_page_dashboard(snapshot)
+    console.print(f"[green]Imported page snapshot {snapshot.period}[/] → "
+                  f"{path.relative_to(config.PROJECT_ROOT)} (tracked, no names).")
+
+
+@linkedin.command("import-event")
+@click.option("--file", "file_", required=True, type=click.Path(exists=True, dir_okay=False),
+              help="JSON file with the event metrics + commenters.")
+def linkedin_import_event(file_: str) -> None:
+    """Import a LinkedIn event from JSON, build its dashboard, fold into insights."""
+    data = json.loads(Path(file_).read_text(encoding="utf-8"))
+    event = li_ingest.import_event(data)
+    path = li_reports.write_event_dashboard(event)
+    console.print(f"[green]Imported event '{event.name}'[/] "
+                  f"({len(event.commenters)} commenters) → "
+                  f"{path.relative_to(config.PROJECT_ROOT)} [yellow](local only — has names)[/].")
+    if event.episode_slug and storage.exists(event.episode_slug):
+        console.print(f"  Folded aggregate metrics into episode [bold]{event.episode_slug}[/].")
+    elif event.episode_slug:
+        console.print(f"  [dim]Episode '{event.episode_slug}' not found — metrics not folded. "
+                      f"Ingest it to include LinkedIn data in insights.[/]")
+
+
+@linkedin.command("page-report")
+@click.argument("period", required=False)
+def linkedin_page_report(period: str | None) -> None:
+    """Re-render the monthly page dashboard (latest if no period given)."""
+    snaps = li_store.all_page_snapshots()
+    if not snaps:
+        console.print("No page snapshots yet. Use `linkedin import-page` first.")
+        return
+    snapshot = li_store.load_page(period) if period else snaps[-1]
+    path = li_reports.write_page_dashboard(snapshot)
+    console.print(f"[green]Page dashboard[/] → {path.relative_to(config.PROJECT_ROOT)}")
+    console.print(li_reports.render_page_dashboard(snapshot))
+
+
+@linkedin.command("event-report")
+@click.argument("key")
+def linkedin_event_report(key: str) -> None:
+    """Re-render an event dashboard (KEY = episode slug, event id, or name-slug)."""
+    event = li_store.load_event(key)
+    path = li_reports.write_event_dashboard(event)
+    console.print(f"[green]Event dashboard[/] → {path.relative_to(config.PROJECT_ROOT)} "
+                  f"[yellow](local only)[/]")
+
+
+@linkedin.command("list")
+def linkedin_list() -> None:
+    """List imported LinkedIn page snapshots and events."""
+    snaps = li_store.all_page_snapshots()
+    events = li_store.all_events()
+    console.print(f"[bold]Page snapshots:[/] {', '.join(s.period for s in snaps) or '—'}")
+    console.print("[bold]Events:[/]")
+    if not events:
+        console.print("  —")
+    for e in events:
+        d = e.date.isoformat() if e.date else "?"
+        console.print(f"  {e.name} [{d}] · attendees={e.attendees} · "
+                      f"commenters={len(e.commenters)} · episode={e.episode_slug or '—'}")
 
 
 # ── list ─────────────────────────────────────────────────────────────────────

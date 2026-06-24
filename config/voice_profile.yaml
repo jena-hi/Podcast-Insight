@@ -1,62 +1,79 @@
-# ─── Your Voice Profile ───────────────────────────────────────────────────────
-# This is the single most important file for blog quality. It teaches the AI to
-# write like YOU, not like generic AI. Edit every field. The example values below
-# are placeholders — replace them. The more specific you are, the better.
-#
-# Tip: paste 2–3 paragraphs you've actually written into "writing_samples" — that
-# alone improves the match more than anything else.
+# ─── Voice Profile — Human Intelligence Movement / Unscripted Intelligence ─────
+# The fields below give the AI the structured essentials. The real depth lives in
+# the two referenced files, which are injected into every generation:
+#   - brand_guide_file: the full, authoritative brand voice doc (your canon)
+#   - sample_files:      real approved posts used as voice/rhythm examples
+# Keep this file and brand_voice.md in sync; brand_voice.md always wins on conflicts.
 
-host_name: "Your Name"
-podcast_name: "Your Podcast"
+host_name: "Dr. Michelle Ament & Arvin Ross"
+podcast_name: "Unscripted Intelligence"
 
-# One or two sentences: who you are and the lens you bring.
 bio: >
-  Host of a live podcast on [your topic]. I interview practitioners and translate
-  what's working in the field into plain, practical takeaways.
+  Unscripted Intelligence is the flagship live podcast of the Human Intelligence
+  Movement (HIM), a grassroots nonprofit coalition ensuring all people have the
+  human skills they need to thrive in an AI world. Co-hosted by Dr. Michelle
+  Ament and Arvin Ross. Live. Real. Sometimes messy. Always human.
 
-# Who you're writing for. Be concrete (role, seniority, what they care about).
 audience: >
-  Mid-career professionals in [industry] who want practical, no-fluff insight
-  they can apply this week.
+  Write for everyone at once: K-12 educators and administrators, district and
+  policy leaders, and students (primary); plus business and workforce leaders,
+  nonprofits, and parents (secondary). They want practical guidance, care about
+  equity and access, expect evidence behind the vision, and want to be treated as
+  partners, not passive recipients. Never education-exclusive.
 
-# 3–6 adjectives for the tone you want.
+# In priority order (see brand_voice.md "Brand Personality").
 tone:
-  - conversational
-  - direct
-  - warm but not cheesy
-  - lightly opinionated
+  - empowering and action-oriented
+  - provocative and urgent (urgency from possibility, never panic or fear)
+  - human-centered, warm with purpose
+  - coalition-building ("we", never top-down)
+  - bold and visionary, grounded in evidence
 
-# How you build paragraphs and sentences.
 style:
-  sentence_length: "mostly short, varied; occasional one-line punch"
-  formality: "casual-professional — like talking to a smart colleague"
-  point_of_view: "first person; speak directly to the reader as 'you'"
-  structure: "lead with the takeaway, then explain, then a concrete example"
+  pronoun: "'we' is the dominant pronoun — coalition, not organization"
+  sentence_length: "punchy, staccato, declarative; short sentences anchor longer passages"
+  structure: "lead with the point, never bury the lead; use contrast/reframe and three-part triads"
+  point_of_view: "speak with the audience, never for them; question-driven on social"
+  voice: "active voice only; present tense; say what is true now, not what we hope to do"
 
-# Words/phrases you use a lot (helps it sound like you).
+# Canon — use verbatim, do not paraphrase (see brand_voice.md "Signature Phrases").
 signature_phrases:
-  - "Here's the thing"
-  - "Let's be honest"
-  - "The practical move is"
+  - "What makes you uniquely human?"
+  - "Human Connection starts with a HI!"
+  - "We don't wait for change. We provoke it."
+  - "We're not just a movement. We're a coalition."
+  - "The true adversary is complacency, not technology itself."
+  - "AI + HI = CI"
 
-# Hard rules — the AI must avoid these.
+# Hard rules — the AI must never break these.
 avoid:
-  - corporate buzzwords (synergy, leverage, circle back, move the needle)
-  - em-dash overuse
-  - generic openers like "In today's fast-paced world..."
-  - exclamation points (use sparingly)
-  - making up statistics or quotes
+  - "em dashes — ever (use commas, colons, or parentheses)"
+  - "the word 'disruption' (use reimagine / transform)"
+  - "'soft skills' (use human-centered skills / durable skills)"
+  - "framing AI as the enemy, or any 'replace/replacement' language"
+  - "fear-based or doom framing; deficit framing about students or educators"
+  - "'fix education' (we reimagine education)"
+  - "'raising awareness' as the primary goal (we provoke and build)"
+  - "passive voice; aspirational hedges ('we hope to', 'working toward')"
+  - "academic or bureaucratic jargon; education-exclusive framing"
 
-# Formatting preferences for blog posts.
 formatting:
   use_headings: true
+  headings_case: "sentence case (e.g. 'Preparing students for an AI world')"
+  oxford_comma: true            # always
+  numbers: "spell out one through nine; numerals for 10 and above"
+  max_exclamations: 1           # per piece, used intentionally
   use_bullets: "sometimes, where it genuinely helps"
-  target_length_words: 900
-  include_intro_hook: true
-  include_call_to_action: true   # e.g. "listen to the full episode" + subscribe
+  target_length_words: 850
+  include_intro_hook: true      # a short declarative anchor that stops the scroll
+  include_call_to_action: true  # listen/watch + 'link in the comments'
 
-# Paste real writing of yours here (the more the better). This is the strongest
-# signal for matching your voice.
-writing_samples: >
-  (Paste 2–3 paragraphs you've written — a past blog, a LinkedIn post, a
-  newsletter. Keep your natural phrasing, typos and all. Replace this text.)
+# Authoritative full guide (in config/). Injected verbatim into every prompt.
+brand_guide_file: brand_voice.md
+
+# Real approved posts used as few-shot voice examples (in config/).
+sample_files:
+  - caption_samples.md
+
+# Optional inline samples (the files above are the main source).
+writing_samples: ""

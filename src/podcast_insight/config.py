@@ -22,9 +22,16 @@ DATA_DIR = PROJECT_ROOT / "data"
 EPISODES_DIR = DATA_DIR / "episodes"
 ANALYTICS_DIR = DATA_DIR / "analytics"
 OUTPUT_DIR = DATA_DIR / "output"
+# LinkedIn raw data — git-ignored because it holds PII (commenter/attendee names).
+LINKEDIN_DIR = DATA_DIR / "linkedin"
+# Git-tracked, publishable per-episode deliverables (blog/promo/social/tiktok).
+CONTENT_DIR = PROJECT_ROOT / "content"
+# Git-tracked reports the monthly cloud job commits (insights over time).
+REPORTS_DIR = PROJECT_ROOT / "reports"
 
 SETTINGS_FILE = CONFIG_DIR / "settings.yaml"
 VOICE_PROFILE_FILE = CONFIG_DIR / "voice_profile.yaml"
+BRAND_VISUAL_FILE = CONFIG_DIR / "brand_visual.yaml"
 
 # Load .env once, on import, so os.getenv works everywhere.
 load_dotenv(PROJECT_ROOT / ".env")
@@ -49,6 +56,25 @@ def voice_profile() -> dict[str, Any]:
     return _read_yaml(VOICE_PROFILE_FILE)
 
 
+@lru_cache(maxsize=1)
+def brand_visual() -> dict[str, Any]:
+    """The parsed contents of config/brand_visual.yaml (fonts/colors/video)."""
+    return _read_yaml(BRAND_VISUAL_FILE)
+
+
+def read_config_text(filename: str) -> str:
+    """Read a text/markdown file from the config/ directory (e.g. brand_voice.md).
+
+    Returns "" if the file is missing so callers can treat it as optional.
+    """
+    if not filename:
+        return ""
+    path = CONFIG_DIR / filename
+    if not path.exists():
+        return ""
+    return path.read_text(encoding="utf-8").strip()
+
+
 def env(name: str, default: str | None = None) -> str | None:
     """Read an environment variable (from .env or the shell)."""
     value = os.getenv(name, default)
@@ -68,5 +94,5 @@ def model_for(task: str) -> str:
 
 def ensure_dirs() -> None:
     """Create the data directories if they don't exist yet."""
-    for d in (EPISODES_DIR, ANALYTICS_DIR, OUTPUT_DIR):
+    for d in (EPISODES_DIR, ANALYTICS_DIR, OUTPUT_DIR, LINKEDIN_DIR, CONTENT_DIR, REPORTS_DIR):
         d.mkdir(parents=True, exist_ok=True)

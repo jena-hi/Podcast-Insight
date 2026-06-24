@@ -97,7 +97,9 @@ class AIClient:
             f"## USER\n\n{prompt}\n"
         )
         path.write_text(rendered, encoding="utf-8")
-        note = (
-            f"[dry-run] No API key set — wrote prompt to {path.relative_to(config.PROJECT_ROOT)}"
-        )
+        try:
+            shown = path.relative_to(config.PROJECT_ROOT)
+        except ValueError:
+            shown = path
+        note = f"[dry-run] No API key set — wrote prompt to {shown}"
         return GenerationResult(text=note, dry_run=True, prompt_path=path, model=model)

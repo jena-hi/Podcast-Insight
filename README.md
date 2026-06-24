@@ -102,11 +102,19 @@ under a dollar on the default model. See `config/settings.yaml` to switch models
 
 ## Make it sound like *you* — the voice profile
 
-Open `config/voice_profile.yaml` and fill it in. This is what makes the blog read
-like you wrote it instead of generic AI. It captures tone, vocabulary, sentence
-rhythm, things you always say, things you never say, and your audience. There's a
-filled-in example in there to copy from. **Spend 10 minutes on this once** — it
-pays off on every episode.
+The voice is driven by three files in `config/`, and all of them are injected
+into every blog and social generation:
+
+- **`voice_profile.yaml`** — the structured essentials (host, audience, tone,
+  signature phrases, hard rules, formatting). Already filled in for the Human
+  Intelligence Movement / *Unscripted Intelligence*.
+- **`brand_voice.md`** — the full, authoritative brand voice guide. This is the
+  canon; on any conflict it wins. Edit this when the brand voice evolves.
+- **`caption_samples.md`** — real approved posts used as few-shot examples so the
+  social copy matches your actual rhythm and structure.
+
+To adapt for a different show, edit these three files. `voice_profile.yaml`
+points at the other two via `brand_guide_file` and `sample_files`.
 
 ---
 
@@ -114,15 +122,31 @@ pays off on every episode.
 
 | Command | What it does |
 |---|---|
+| `podcast-insight from-youtube <url>` | **Paste a YouTube link** → fetch transcript → topics → blog → promo caption. |
 | `podcast-insight ingest <file> --title ... --date ...` | Register an episode from a transcript file. |
 | `podcast-insight topics <episode>` | Extract & rank the top 3 topics. |
 | `podcast-insight blog <episode>` | Write a blog expanding the top 3 topics, in your voice. |
+| `podcast-insight promo <episode>` | Write a caption promoting the blog post. |
 | `podcast-insight clips add <episode> ...` | Add a highlight clip (title, timestamps, note). |
 | `podcast-insight social <episode>` | Write social copy for each clip. |
-| `podcast-insight run <episode>` | Do topics → blog → social in one go. |
+| `podcast-insight tiktok <episode>` | Generate a 15s TikTok (storyboard + voiceover + caption) per topic; render in Canva. |
+| `podcast-insight run <episode>` | Do topics → blog → promo → clip social in one go. |
+| `podcast-insight auth youtube` | One-time OAuth for private YouTube analytics. |
 | `podcast-insight analytics pull <episode>` | Pull YouTube/Spotify/Apple stats. *(needs API setup)* |
+| `podcast-insight analytics pull-all` | Pull stats for every episode (used by the monthly job). |
 | `podcast-insight insights` | Rank top performers + recommendations across all episodes. |
 | `podcast-insight list` | Show all episodes and what's been generated. |
+
+### The fastest path: from a YouTube link
+
+```bash
+podcast-insight from-youtube "https://www.youtube.com/watch?v=XXXXXXXXXXX"
+```
+
+This grabs the transcript (no API key, works on your auto-captioned uploads),
+then writes the blog and a promo caption in your brand voice. In a Claude session
+you can simply paste the link and ask — see `CLAUDE.md`. (YouTube occasionally
+blocks transcript fetches from cloud IPs, so this is most reliable run locally.)
 
 Run any command with `--help` for details.
 
@@ -155,8 +179,13 @@ src/podcast_insight/
 - [x] Insights + recommendations engine (works on whatever analytics it's given)
 - [~] Analytics connectors — structured + documented; need your API credentials
       to pull live data (see `docs/CONNECTING_ANALYTICS.md`)
-- [ ] Auto-publishing to LinkedIn / YouTube (stubs in `publish/`)
-- [ ] Scheduling (run automatically after each episode)
+- [x] LinkedIn layer — monthly page dashboard + per-event dashboards (attendees,
+      impressions, engagement, who commented) via ConnectSafely
+      (see `docs/LINKEDIN.md`)
+- [x] Monthly scheduling for YouTube/Spotify (GitHub Actions)
+- [x] TikTok layer — 15s branded videos per topic (storyboard + voiceover +
+      caption) rendered in Canva (see `docs/TIKTOK.md`)
+- [ ] Auto-publishing to LinkedIn / YouTube / TikTok (stubs in `publish/`)
 
 See `docs/CONNECTING_ANALYTICS.md` and `docs/AUTOMATION.md` for the next steps,
 each written for someone who's done "some API and coding stuff."

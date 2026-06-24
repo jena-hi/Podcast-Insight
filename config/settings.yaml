@@ -25,10 +25,22 @@ content:
     - linkedin
     - youtube       # title + description for the clip upload
     - shorts        # short vertical caption / hook
+  # Platforms to write a caption promoting the BLOG post (used by from-youtube).
+  promo_platforms:
+    - linkedin
   # Hashtag style for social copy.
   hashtags:
     enabled: true
     max: 5
+
+linkedin:
+  # The COMPANY PAGE that monthly page analytics are pulled from (not a personal
+  # profile). These ids come from `get-organizations`. To track a different page
+  # (e.g. ProSolve, id 691327), change these or add it as a second entry.
+  company_id: "101674670"
+  company_urn: "urn:li:fsd_company:101674670"
+  universal_name: "humanintelligencemovement"
+  page_name: "Human Intelligence Movement"
 
 analytics:
   # Which platforms to attempt to pull from.
@@ -39,8 +51,10 @@ analytics:
   # How a "top performer" is scored. These weights are combined into one score
   # after each metric is normalized across your episodes. Tune to taste.
   scoring_weights:
-    views: 0.30
-    watch_time: 0.30
-    avg_view_duration: 0.15
-    engagement: 0.15      # likes + comments + shares
+    views: 0.25
+    watch_time: 0.20
+    avg_view_duration: 0.10
+    engagement: 0.15      # likes/reactions + comments + shares
     listens: 0.10
+    impressions: 0.15     # LinkedIn (and any platform reporting impressions)
+    attendees: 0.05       # LinkedIn event attendees
