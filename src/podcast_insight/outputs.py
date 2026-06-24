@@ -14,15 +14,23 @@ def _dir(name: str) -> Path:
     return d
 
 
-def write_blog(episode: Episode) -> Path:
-    path = _dir("blog") / f"{episode.slug}.md"
-    path.write_text(episode.blog_markdown, encoding="utf-8")
+def _publish(slug: str, filename: str, text: str) -> Path:
+    """Write a publishable deliverable to the git-tracked content/<slug>/ folder."""
+    d = config.CONTENT_DIR / slug
+    d.mkdir(parents=True, exist_ok=True)
+    path = d / filename
+    path.write_text(text, encoding="utf-8")
     return path
+
+
+def write_blog(episode: Episode) -> Path:
+    """Write the blog. Local working copy + git-tracked content/ copy (returned)."""
+    (_dir("blog") / f"{episode.slug}.md").write_text(episode.blog_markdown, encoding="utf-8")
+    return _publish(episode.slug, "blog.md", episode.blog_markdown)
 
 
 def write_social(episode: Episode) -> Path:
     """Write one markdown file per episode with all clips' copy."""
-    path = _dir("social") / f"{episode.slug}.md"
     lines = [f"# Social copy — {episode.title}", ""]
     for clip in episode.clips:
         lines.append(f"## {clip.title}  ({clip.start or '?'}–{clip.end or '?'})")
@@ -36,13 +44,13 @@ def write_social(episode: Episode) -> Path:
             lines.append(f"### {platform.capitalize()}")
             lines.append(copy)
             lines.append("")
-    path.write_text("\n".join(lines), encoding="utf-8")
-    return path
+    text = "\n".join(lines)
+    (_dir("social") / f"{episode.slug}.md").write_text(text, encoding="utf-8")
+    return _publish(episode.slug, "social.md", text)
 
 
 def write_promo(episode: Episode) -> Path:
     """Write the blog-promo caption(s) to a markdown file."""
-    path = _dir("promo") / f"{episode.slug}.md"
     lines = [f"# Blog promo caption — {episode.title}", ""]
     if not episode.blog_promo:
         lines.append("_(no promo generated yet)_")
@@ -50,8 +58,9 @@ def write_promo(episode: Episode) -> Path:
         lines.append(f"## {platform.capitalize()}")
         lines.append(copy)
         lines.append("")
-    path.write_text("\n".join(lines), encoding="utf-8")
-    return path
+    text = "\n".join(lines)
+    (_dir("promo") / f"{episode.slug}.md").write_text(text, encoding="utf-8")
+    return _publish(episode.slug, "promo.md", text)
 
 
 def write_topics(episode: Episode) -> Path:
@@ -93,9 +102,9 @@ def write_tiktok(episode: Episode, videos) -> Path:
         if v.hashtags:
             lines.append(" ".join(f"#{h.lstrip('#')}" for h in v.hashtags))
         lines.append("")
-    path = out / "summary.md"
-    path.write_text("\n".join(lines), encoding="utf-8")
-    return path
+    text = "\n".join(lines)
+    (out / "summary.md").write_text(text, encoding="utf-8")
+    return _publish(episode.slug, "tiktok-scripts.md", text)
 
 
 def write_insights(markdown: str, stamp: str | None = None) -> Path:

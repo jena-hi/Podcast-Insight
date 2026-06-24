@@ -24,6 +24,8 @@ ANALYTICS_DIR = DATA_DIR / "analytics"
 OUTPUT_DIR = DATA_DIR / "output"
 # LinkedIn raw data — git-ignored because it holds PII (commenter/attendee names).
 LINKEDIN_DIR = DATA_DIR / "linkedin"
+# Git-tracked, publishable per-episode deliverables (blog/promo/social/tiktok).
+CONTENT_DIR = PROJECT_ROOT / "content"
 # Git-tracked reports the monthly cloud job commits (insights over time).
 REPORTS_DIR = PROJECT_ROOT / "reports"
 
@@ -92,5 +94,5 @@ def model_for(task: str) -> str:
 
 def ensure_dirs() -> None:
     """Create the data directories if they don't exist yet."""
-    for d in (EPISODES_DIR, ANALYTICS_DIR, OUTPUT_DIR, LINKEDIN_DIR, REPORTS_DIR):
+    for d in (EPISODES_DIR, ANALYTICS_DIR, OUTPUT_DIR, LINKEDIN_DIR, CONTENT_DIR, REPORTS_DIR):
         d.mkdir(parents=True, exist_ok=True)
